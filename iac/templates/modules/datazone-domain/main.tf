@@ -5,6 +5,7 @@ resource "awscc_datazone_domain" "domain" {
 
   name                  = var.DOMAIN_NAME
   domain_execution_role = var.DOMAIN_EXECUTION_ROLE_ARN
+
 }
 
 # Publish Datazone SSM Parameter

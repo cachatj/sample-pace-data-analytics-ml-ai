@@ -3,19 +3,21 @@
 
 resource "aws_lakeformation_permissions" "billing_producer_default_catalog_database_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
 
   database {
     catalog_id = local.account_id
-    name = "${var.APP}_${var.ENV}_billing"
+    name       = "${var.APP}_${var.ENV}_billing"
   }
 }
 
 resource "aws_lakeformation_permissions" "billing_producer_default_catalog_hive_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -26,8 +28,9 @@ resource "aws_lakeformation_permissions" "billing_producer_default_catalog_hive_
 
 resource "aws_lakeformation_permissions" "billing_producer_default_catalog_iceberg_staic_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -38,8 +41,9 @@ resource "aws_lakeformation_permissions" "billing_producer_default_catalog_icebe
 
 resource "aws_lakeformation_permissions" "billing_producer_default_catalog_iceberg_dynamic_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -148,19 +152,21 @@ resource "aws_lakeformation_permissions" "billing_producer_default_catalog_icebe
 # Producer Lake Formation Permissions
 resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_database_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
 
   database {
     catalog_id = local.account_id
-    name = "${var.APP}_${var.ENV}_inventory"
+    name       = "${var.APP}_${var.ENV}_inventory"
   }
 }
 
 resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_hive_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -171,8 +177,9 @@ resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_hiv
 
 resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_iceberg_static_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -183,8 +190,9 @@ resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_ice
 
 resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_iceberg_dynamic_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -292,19 +300,21 @@ resource "aws_lakeformation_permissions" "inventory_producer_default_catalog_ice
 # Producer Lake Formation Permissions
 resource "aws_lakeformation_permissions" "splunk_producer_default_catalog_database_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
 
   database {
     catalog_id = local.account_id
-    name = "${var.APP}_${var.ENV}_splunk"
+    name       = "${var.APP}_${var.ENV}_splunk"
   }
 }
 
 resource "aws_lakeformation_permissions" "splunk_producer_default_catalog_iceberg_table_permissions" {
 
-  principal   = local.PRODUCER_ROLE
-  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  principal                     = local.PRODUCER_ROLE
+  permissions                   = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
 
   table {
     catalog_id    = local.account_id
@@ -382,3 +392,5 @@ resource "aws_lakeformation_permissions" "splunk_producer_default_catalog_iceber
 #     name          = "splunk"
 #   }
 # }
+
+

@@ -473,6 +473,218 @@ resource "aws_iam_policy" "project_policy_ssm" {
   #checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions": "Skipping this for simplicity"
 }
 
+resource "aws_iam_policy" "project_policy_glue" {
+
+  name = "${var.APP}-${var.ENV}-project-role-policy-glue"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "glue:GetCrawler",
+          "glue:GetTableOptimizer",
+          "glue:BatchGetDevEndpoints",
+          "glue:GetTableVersions",
+          "glue:GetPartitions",
+          "glue:GetMLTransform",
+          "glue:ListUsageProfiles",
+          "glue:GetDevEndpoint",
+          "glue:GetTrigger",
+          "glue:GetJobRun",
+          "glue:GetResourcePolicies",
+          "glue:GetIntegrationResourceProperty",
+          "glue:GetCustomEntityType",
+          "glue:GetDataQualityResult",
+          "glue:GetJobs",
+          "glue:ListStatements",
+          "glue:GetTriggers",
+          "glue:GetWorkflowRun",
+          "glue:GetGeneratedCode",
+          "glue:ListCrawls",
+          "glue:ListCustomEntityTypes",
+          "glue:GetPartitionIndexes",
+          "glue:GetMapping",
+          "glue:GetPartition",
+          "glue:GetCatalog",
+          "glue:ListColumnStatisticsTaskRuns",
+          "glue:GetEntityRecords",
+          "glue:ListSchemaVersions",
+          "glue:GetDataQualityModel",
+          "glue:GetClassifiers",
+          "glue:GetDataQualityRuleRecommendationRun",
+          "glue:GetColumnStatisticsTaskSettings",
+          "glue:GetCatalogImportStatus",
+          "glue:BatchGetBlueprints",
+          "glue:GetTableVersion",
+          "glue:GetConnection",
+          "glue:GetDashboardUrl",
+          "glue:ListSchemas",
+          "glue:GetCompletion",
+          "glue:DescribeIntegrations",
+          "glue:GetColumnStatisticsTaskRun",
+          "glue:ListDataQualityRuleRecommendationRuns",
+          "glue:GetRegistry",
+          "glue:BatchGetPartition",
+          "glue:ListJobs",
+          "glue:GetTags",
+          "glue:GetTable",
+          "glue:GetDatabase",
+          "glue:ListJobUpgradeAnalyses",
+          "glue:GetDataflowGraph",
+          "glue:BatchGetCrawlers",
+          "glue:GetSession",
+          "glue:QuerySchemaVersionMetadata",
+          "glue:ListDataQualityResults",
+          "glue:GetPlan",
+          "glue:ListCrawlers",
+          "glue:GetColumnStatisticsForPartition",
+          "glue:GetJobRuns",
+          "glue:SearchTables",
+          "glue:GetDataCatalogEncryptionSettings",
+          "glue:CheckSchemaVersionValidity",
+          "glue:GetWorkflowRunProperties",
+          "glue:DescribeInboundIntegrations",
+          "glue:GetJobUpgradeAnalysis",
+          "glue:GetSchema",
+          "glue:GetSecurityConfiguration",
+          "glue:GetResourcePolicy",
+          "glue:GetUserDefinedFunction",
+          "glue:GetCatalogs",
+          "glue:GetBlueprint",
+          "glue:BatchGetTableOptimizer",
+          "glue:GetColumnStatisticsForTable",
+          "glue:GetUserDefinedFunctions",
+          "glue:GetClassifier",
+          "glue:GetSchemaByDefinition",
+          "glue:ListWorkflows",
+          "glue:GetTables",
+          "glue:GetSchemaVersionsDiff",
+          "glue:ListBlueprints",
+          "glue:ListTableOptimizerRuns",
+          "glue:GetDataQualityRuleset",
+          "glue:GetDevEndpoints",
+          "glue:BatchGetWorkflows",
+          "glue:GetColumnStatisticsTaskRuns",
+          "glue:ListDevEndpoints",
+          "glue:BatchGetJobs",
+          "glue:GetStatement",
+          "glue:ListRegistries",
+          "glue:GetIntegrationTableProperties",
+          "glue:GetJob",
+          "glue:GetWorkflow",
+          "glue:GetBlueprintRun",
+          "glue:GetConnections",
+          "glue:GetCrawlers",
+          "glue:GetBlueprintRuns",
+          "glue:ListMLTransforms",
+          "glue:ListDataQualityRulesets",
+          "glue:GetJobBookmark",
+          "glue:GetMLTransforms",
+          "glue:ListSessions",
+          "glue:GetMLTaskRuns",
+          "glue:ListTriggers",
+          "glue:GetSecurityConfigurations",
+          "glue:GetDatabases",
+          "glue:GetMLTaskRun",
+          "glue:GetUsageProfile",
+          "glue:GetSchemaVersion",
+          "glue:BatchGetTriggers",
+          "glue:ListDataQualityRulesetEvaluationRuns",
+          "glue:BatchGetCustomEntityTypes",
+          "glue:GetDataQualityRulesetEvaluationRun",
+          "glue:GetWorkflowRuns",
+          "glue:GetCrawlerMetrics",
+          "glue:GetDataQualityModelResult"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+
+  #checkov:skip=CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_289: "Ensure IAM policies does not allow permissions management / resource exposure without constraints": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions": "Skipping this for simplicity"
+}
+
+resource "aws_iam_policy" "project_policy_lake_formation" {
+
+  name = "${var.APP}-${var.ENV}-project-role-policy-lake-formation"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "lakeformation:ListLFTagExpressions",
+          "lakeformation:SearchDatabasesByLFTags",
+          "lakeformation:GetDataAccess",
+          "lakeformation:GetDataCellsFilter",
+          "lakeformation:GetWorkUnits",
+          "lakeformation:RegisterResource",
+          "lakeformation:UpdateLakeFormationIdentityCenterConfiguration",
+          "lakeformation:ListPermissions",
+          "lakeformation:CommitTransaction",
+          "lakeformation:GetLFTagExpression",
+          "lakeformation:CreateLakeFormationOptIn",
+          "lakeformation:SearchTablesByLFTags",
+          "lakeformation:DeleteLakeFormationOptIn",
+          "lakeformation:UpdateLFTag",
+          "lakeformation:GetLFTag",
+          "lakeformation:UpdateTableStorageOptimizer",
+          "lakeformation:GetResourceLFTags",
+          "lakeformation:ListResources",
+          "lakeformation:CreateLFTag",
+          "lakeformation:GetQueryStatistics",
+          "lakeformation:GetDataLakeSettings",
+          "lakeformation:CreateDataCellsFilter",
+          "lakeformation:UpdateResource",
+          "lakeformation:StartQueryPlanning",
+          "lakeformation:GetDataLakePrincipal",
+          "lakeformation:ListLakeFormationOptIns",
+          "lakeformation:RegisterResourceWithPrivilegedAccess",
+          "lakeformation:DeleteLFTagExpression",
+          "lakeformation:CreateLFTagExpression",
+          "lakeformation:UpdateDataCellsFilter",
+          "lakeformation:CancelTransaction",
+          "lakeformation:ExtendTransaction",
+          "lakeformation:ListDataCellsFilter",
+          "lakeformation:CreateLakeFormationIdentityCenterConfiguration",
+          "lakeformation:GetEffectivePermissionsForPath",
+          "lakeformation:ListTransactions",
+          "lakeformation:DeleteObjectsOnCancel",
+          "lakeformation:ListLFTags",
+          "lakeformation:GetWorkUnitResults",
+          "lakeformation:ListTableStorageOptimizers",
+          "lakeformation:GetQueryState",
+          "lakeformation:StartTransaction",
+          "lakeformation:UpdateTableObjects",
+          "lakeformation:DescribeResource",
+          "lakeformation:DescribeLakeFormationIdentityCenterConfiguration",
+          "lakeformation:UpdateLFTagExpression",
+          "lakeformation:DeleteLFTag",
+          "lakeformation:GetTableObjects",
+          "lakeformation:DeregisterResource",
+          "lakeformation:DeleteDataCellsFilter",
+          "lakeformation:DeleteLakeFormationIdentityCenterConfiguration",
+          "lakeformation:DescribeTransaction"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+
+  #checkov:skip=CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_289: "Ensure IAM policies does not allow permissions management / resource exposure without constraints": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints": "Skipping this for simplicity"
+  #checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions": "Skipping this for simplicity"
+}
+
+# Producer Role
+
 resource "aws_iam_role_policy_attachment" "producer_role_attachment_s3" {
 
   role       = split(":role/", local.PRODUCER_ROLE)[1]
@@ -503,6 +715,20 @@ resource "aws_iam_role_policy_attachment" "producer_role_attachment_ssm" {
   policy_arn = aws_iam_policy.project_policy_ssm.arn
 }
 
+resource "aws_iam_role_policy_attachment" "producer_role_attachment_glue" {
+
+  role       = split(":role/", local.PRODUCER_ROLE)[1]
+  policy_arn = aws_iam_policy.project_policy_glue.arn
+}
+
+resource "aws_iam_role_policy_attachment" "producer_role_attachment_lake_formation" {
+
+  role       = split(":role/", local.PRODUCER_ROLE)[1]
+  policy_arn = aws_iam_policy.project_policy_lake_formation.arn
+}
+
+# Consumer Role
+
 resource "aws_iam_role_policy_attachment" "consumer_role_attachment_s3" {
 
   role       = split(":role/", local.CONSUMER_ROLE)[1]
@@ -531,4 +757,16 @@ resource "aws_iam_role_policy_attachment" "consumer_role_attachment_ssm" {
 
   role       = split(":role/", local.CONSUMER_ROLE)[1]
   policy_arn = aws_iam_policy.project_policy_ssm.arn
+}
+
+resource "aws_iam_role_policy_attachment" "consumer_role_attachment_glue" {
+
+  role       = split(":role/", local.CONSUMER_ROLE)[1]
+  policy_arn = aws_iam_policy.project_policy_glue.arn
+}
+
+resource "aws_iam_role_policy_attachment" "consumer_role_attachment_lake_formation" {
+
+  role       = split(":role/", local.CONSUMER_ROLE)[1]
+  policy_arn = aws_iam_policy.project_policy_lake_formation.arn
 }

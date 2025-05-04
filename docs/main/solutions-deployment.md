@@ -34,11 +34,15 @@ In order to execute this deployment, please ensure you have installed the follow
 1. Open your local terminal, go to the directory in which you wish to download the DAIVI solution using `cd`
 2. Run the following command to download codebase into your local directory:
 
-`git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git` 
+```
+git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git` 
+```
 
 3. From your terminal, go to the root directory of the DAIVI codebase using:
 
- `cd sample-pace-data-analytics-ml-ai`
+```
+cd sample-pace-data-analytics-ml-ai`
+```
 
 ### Environment setup
 
@@ -80,7 +84,7 @@ TF_S3_BACKEND_NAME
 
 Environment Setup Steps:
 
-1) **Deployment Role**: Use AWS CLI to login to the account you wish to deploy to, using a deployment role with sufficient privileges to deploy the solution, preferably using the admin role or power user role or an equivalent role with sufficient privileges.
+1) **Deployment Role**: Use AWS CLI to login to the account you wish to deploy to, using a deployment role with sufficient privileges to deploy the solution, preferably using the admin role or an equivalent role with sufficient privileges. The solution assumes that you will login to AWS Management console using this deployment role. This role is also referred to as Admin role in the deployment instructions. 
 
 To setup your aws-cli with deployment role credentials run the following command:
 
@@ -102,15 +106,7 @@ export AWS_SECRET_ACCESS_KEY=...
 export AWS_SESSION_TOKEN=...
 ```
 
-2. **Deployment Role as LakeFormation Admin**: Please add the deployment role as an "Administrator" in Lakeformation using following steps. This will allow you to successfully configure LakeFormation grants through make targets. 
-  - Open AWS LakeFormation service
-  - Click on "Administration -> Administrative roles and tasks" in left navigation panel
-  - Click on "Manage administrators" button
-  - Select "Data lake administrator" radio button  
-  - Select the role from "IAM users and roles" drop down
-  - Select "Confirm" button.  
-
-3) **Initialization**: From your terminal, go to the root directory of the DAIVI codebase and execute the following command. 
+2) **Initialization**: From your terminal, go to the root directory of the DAIVI codebase and execute the following command. 
 This command will run a wizard that will ask you to provide a value for all of the configuration settings documented above. 
 It will perform a search/replace on the project files so that they use the values you provide.
 
@@ -118,7 +114,7 @@ It will perform a search/replace on the project files so that they use the value
 make init
 ```
 
-4) **Set Up Terraform Backend**: Execute the following command to set up S3 buckets to store the project's Terraform state.
+3) **Set Up Terraform Backend**: Execute the following command to set up S3 buckets to store the project's Terraform state.
 
 ```
 make deploy-tf-backend-cf-stack
@@ -166,10 +162,18 @@ You will need to deploy the following modules in order to deploy the whole solut
 ## Prep1: Set up Admin Role in Makefile
 
 - Open Makefile in root folder
-- Line #6 of the make file has a constant called "ADMIN_ROLE"
+- Line #16 of the make file has a constant called "ADMIN_ROLE"
 - Please specify the name of the IAM role you will use to login to AWS management console. This role will be granted lake formation access to the Glue databases, so that you can execute queries against the Glue databases using the Athena console. 
 
-## Prep2: Delete "default" Glue Database
+## Prep2. Set up Admin Role as LakeFormation Admininstrator: 
+
+From your terminal, go to the root directory of the DAIVI codebase and execute the following command. This will add the Admin role as LakeFormation admin.
+
+```
+make set-up-lake-formation-admin-role
+``` 
+
+## Prep3: Delete "default" Glue Database
 
 Certain Glue Jobs or EMR Jobs may fail if "default" Glue database exists. Please note that the "default" Glue database may also get created automatically, when you execute certain glue jobs. If you notice an error, either in a Glue job or an EMR job, related to a specific role not having permissions to "default" glue database, then please delete the "default" Glue database if it exists following the steps outlined above. 
 
@@ -268,6 +272,42 @@ To delete Account-level Instance:
    # delete the account-level instance using retrieved ARN    
    aws sso-admin delete-instance --instance-arn arn:aws:sso:<region>:<account-id>:instance/<instance-id>
 ```
+
+#### Using Your Existing IAM Identity Center (BYO IDC)
+If you already have IAM Identity Center implemented and want to use your existing instance, you can integrate it with SageMaker Unified Studio and Datazone modules. This integration requires storing your IAM Identity Center user mappings in AWS Systems Manager Parameter Store.
+
+To configure the integration, run:
+
+```
+make deploy-byo-idc
+```
+##### Required Groups
+
+The command expects four user groups in your IAM Identity Center:
+- Admin
+- Domain Owner
+- Project Owner
+- Project Contributor
+
+##### Automatic User Assignment
+
+The command handles various scenarios to ensure critical roles are always populated:
+  1. **For Admin, Domain Owner, and Project Owner groups:**
+     - If the group doesn't exist: The deployer's email (caller identity) is automatically added
+     - If the group exists but is empty: The deployer's email is automatically added
+     - If the group exists and has users: The existing users are preserved
+  2. **For Project Contributor group:**
+     - If the group doesn't exist: An empty list is created
+     - If the group exists but is empty: The list remains empty
+     - If the group exists and has users: The existing users are preserved
+
+##### Why This Matters
+This automatic user assignment is crucial because:
+- Domain creation for SageMaker Unified Studio and Amazon Datazone requires at least one Domain Owner
+- Projects creation requires at least one Project Owner
+- By automatically adding the deployer to these roles when needed, the command ensures these requirements are met and prevents deployment failures
+
+The command stores all user mappings in AWS Systems Manager Parameter Store in a format compatible with both SageMaker Unified Studio and Datazone modules.
 
 ## 3. **Sagemaker Domain**
 
@@ -376,7 +416,6 @@ make start-billing-s3table-create-job (wait for glue job to complete)
 make start-billing-s3table-job (wait for glue job to complete)
 make grant-lake-formation-billing-s3-table-catalog
 make start-billing-hive-data-quality-ruleset
-make start-billing-iceberg-data-quality-ruleset
 ```
 
 | Target                                          | Result                                                        | Verification                                     | 
@@ -390,7 +429,7 @@ make start-billing-iceberg-data-quality-ruleset
 | start-billing-s3table-job                        | Run the  {app}-{env}-billing-s3table job                     | Verify that the glue job starts. wait for the glue job to complete            |    
 | grant-lake-formation-billing-s3-table-catalog    | Grant Lake Formation permissions to inventory S3 table catalog | Verify that the permission is added Lakeformation                    |    
 | start-billing-hive-data-quality-ruleset          | Execute billing_hive_ruleset associated with {app}_{env}_billing_hive Glue table                     | Verify that billing_hive_ruleset is executed                  |    
-| start-billing-iceberg-data-quality-ruleset       | Execute billing_iceberg_ruleset associated with {app}_{env}_billing_iceberg_statics Glue table             | Verify that billing_iceberg_ruleset is executed                    |    
+---
 
 ## 10. **Billing Data Lake - Dynamic**
 
@@ -455,7 +494,6 @@ make start-inventory-s3table-create-job (wait for glue job to complete)
 make start-inventory-s3table-job (wait for glue job to complete)
 make grant-lake-formation-inventory-s3-table-catalog 
 make start-inventory-hive-data-quality-ruleset 
-make start-inventory-iceberg-data-quality-ruleset
 ```
 
 | Target                                          | Result                                                        | Verification                                     | 
@@ -469,7 +507,7 @@ make start-inventory-iceberg-data-quality-ruleset
 | start-inventory-s3table-job                        | Run the  {app}-{env}-inventory-s3table job                     | Verify that the glue job starts. wait for the glue job to complete            |    
 | grant-lake-formation-inventory-s3-table-catalog    | Grant Lake Formation permissions to inventory S3 table catalog | Verify that the permission is added Lakeformation                    |    
 | start-inventory-hive-data-quality-ruleset          | Execute inventory_hive_ruleset associated with {app}_{env}_inventory_hive Glue table                     | Verify that inventory_hive_ruleset is executed                  |    
-| start-inventory-iceberg-data-quality-ruleset       | Execute inventory_iceberg_ruleset associated with {app}_{env}_inventory_iceberg_statics Glue table             | Verify that inventory_iceberg_ruleset is executed                    |    
+---  
 
 ## 13. **Inventory Data Lake - Dynamic**
 

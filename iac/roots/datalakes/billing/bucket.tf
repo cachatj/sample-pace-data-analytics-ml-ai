@@ -5,20 +5,20 @@ data "aws_kms_key" "s3_primary_key" {
 
   provider = aws.primary
 
-  key_id   = "alias/${var.S3_PRIMARY_KMS_KEY_ALIAS}"
+  key_id = "alias/${var.S3_PRIMARY_KMS_KEY_ALIAS}"
 }
 
 data "aws_kms_key" "s3_secondary_key" {
 
   provider = aws.secondary
 
-  key_id   = "alias/${var.S3_SECONDARY_KMS_KEY_ALIAS}"
+  key_id = "alias/${var.S3_SECONDARY_KMS_KEY_ALIAS}"
 }
 
 module "billing_data_bucket" {
 
   source = "../../../templates/modules/bucket"
-  
+
   providers = {
     aws.primary   = aws.primary
     aws.secondary = aws.secondary
@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "billing_policy_document" {
       type        = "Service"
       identifiers = ["billingreports.amazonaws.com"]
     }
-    actions = ["s3:PutObject"]
+    actions   = ["s3:PutObject"]
     resources = ["${module.billing_data_bucket.primary_bucket_arn}/*"]
   }
 }
@@ -83,7 +83,7 @@ resource "aws_s3_bucket_notification" "billing_s3_notification" {
 module "billing_iceberg_bucket" {
 
   source = "../../../templates/modules/bucket"
-  
+
   providers = {
     aws.primary   = aws.primary
     aws.secondary = aws.secondary
@@ -102,7 +102,7 @@ module "billing_iceberg_bucket" {
 module "billing_hive_bucket" {
 
   source = "../../../templates/modules/bucket"
-  
+
   providers = {
     aws.primary   = aws.primary
     aws.secondary = aws.secondary
@@ -120,10 +120,72 @@ module "billing_hive_bucket" {
 
 resource "aws_s3_object" "billing_data_files" {
 
-  for_each = fileset("${path.module}/../../../../data/billing/static/", "*.gz")
-  bucket   = module.billing_data_bucket.primary_bucket_id
-  key = each.value
-  source = "${path.module}/../../../../data/billing/static/${each.value}"
+  for_each     = fileset("${path.module}/../../../../data/billing/static/", "*.gz")
+  bucket       = module.billing_data_bucket.primary_bucket_id
+  key          = each.value
+  source       = "${path.module}/../../../../data/billing/static/${each.value}"
   content_type = "gz"
-  kms_key_id = data.aws_kms_key.s3_primary_key.arn
+  kms_key_id   = data.aws_kms_key.s3_primary_key.arn
+}
+
+resource "aws_lakeformation_resource" "hive_s3_location" {
+
+  arn      = "arn:aws:s3:::${var.APP}-${var.ENV}-billing-hive-primary"
+  role_arn = data.aws_iam_role.glue_role.arn
+
+  use_service_linked_role = false
+  hybrid_access_enabled   = true
+
+  depends_on = [module.billing_hive_bucket]
+}
+
+resource "aws_lakeformation_permissions" "hive_deployer_role" {
+
+  principal   = local.role_arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.hive_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "hive_glue_role" {
+
+  principal   = data.aws_iam_role.glue_role.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.hive_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_resource" "iceberg_s3_location" {
+
+  arn      = "arn:aws:s3:::${var.APP}-${var.ENV}-billing-iceberg-primary"
+  role_arn = data.aws_iam_role.glue_role.arn
+
+  use_service_linked_role = false
+  hybrid_access_enabled   = true
+
+  depends_on = [module.billing_iceberg_bucket]
+}
+
+resource "aws_lakeformation_permissions" "iceberg_deployer_role" {
+
+  principal   = local.role_arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "iceberg_glue_role" {
+
+  principal   = data.aws_iam_role.glue_role.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
 }

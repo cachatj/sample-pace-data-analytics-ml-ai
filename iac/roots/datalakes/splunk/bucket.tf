@@ -31,7 +31,34 @@ module "iceberg_splunk_bucket" {
   USAGE                        = "splunk"
 }
 
+resource "aws_lakeformation_resource" "iceberg_s3_location" {
 
+  arn      = "arn:aws:s3:::${var.APP}-${var.ENV}-splunk-iceberg-primary"
+  role_arn = data.aws_iam_role.glue_role.arn
 
+  use_service_linked_role = false
+  hybrid_access_enabled   = false
 
+  depends_on = [module.iceberg_splunk_bucket]
+}
+
+resource "aws_lakeformation_permissions" "iceberg_deployer_role" {
+
+  principal   = local.role_arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "iceberg_glue_role" {
+
+  principal   = data.aws_iam_role.glue_role.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
+}
 

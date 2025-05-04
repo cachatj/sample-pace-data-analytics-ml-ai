@@ -144,6 +144,77 @@ destroy-idc-acc:
 		terraform destroy -auto-approve;)
 		@echo "Finished Destroying Account-Level Identity Center"
 
+deploy-byo-idc:
+	@echo "Creating SSM parameter with IAM Identity Center user mappings"
+	@if [ -z "$(APP)" ] || [ -z "$(ENV)" ]; then \
+		echo "Error: APP and ENV variables are required. Please set them using APP=<app-name> ENV=<environment>"; \
+		exit 1; \
+	fi; \
+	IDENTITY_STORE_ID=$$(aws sso-admin list-instances --query 'Instances[0].IdentityStoreId' --output text); \
+	KMS_KEY_ID=$$(aws kms describe-key --key-id alias/aws/ssm --query 'KeyMetadata.KeyId' --output text); \
+	CALLER_EMAIL=$$(aws sts get-caller-identity --query 'Arn' --output text | grep -o '[^/]*$$'); \
+	JSON_STRUCTURE="{\"$$IDENTITY_STORE_ID\":{"; \
+	for GROUP in "Admin" "Domain Owner" "Project Contributor" "Project Owner"; do \
+		echo "Processing $$GROUP..."; \
+		GROUP_ID=$$(aws identitystore list-groups \
+			--identity-store-id $$IDENTITY_STORE_ID \
+			--filters "AttributePath=DisplayName,AttributeValue=$$GROUP" \
+			--query 'Groups[0].GroupId' \
+			--output text); \
+		if [ "$$GROUP_ID" != "None" ]; then \
+			MEMBERS=$$(aws identitystore list-group-memberships \
+				--identity-store-id $$IDENTITY_STORE_ID \
+				--group-id $$GROUP_ID); \
+			MEMBER_COUNT=$$(echo $$MEMBERS | jq '.GroupMemberships | length'); \
+			if [ "$$MEMBER_COUNT" -gt 0 ]; then \
+				USER_EMAILS=$$(echo $$MEMBERS | jq -r '.GroupMemberships[].MemberId.UserId // .GroupMemberships[].MemberId' | while read MEMBER_ID; do \
+					if [[ $$MEMBER_ID =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$$ ]]; then \
+						aws identitystore describe-user \
+							--identity-store-id $$IDENTITY_STORE_ID \
+							--user-id "$$MEMBER_ID" \
+							--query 'UserName' \
+							--output text; \
+					else \
+						echo "Invalid user ID format: $$MEMBER_ID" >&2; \
+					fi; \
+				done | grep -v None | awk -v ORS=, '{print "\""$$0"\""}' | sed 's/,$$/\n/');\
+				if [ ! -z "$$USER_EMAILS" ]; then \
+					JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[$$USER_EMAILS],"; \
+				elif [ "$$GROUP" = "Domain Owner" ] || [ "$$GROUP" = "Project Owner" ] || [ "$$GROUP" = "Admin" ]; then \
+					echo "Group $$GROUP exists but has no valid users. Adding caller ($$CALLER_EMAIL) as $$GROUP"; \
+					JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[\"$$CALLER_EMAIL\"],"; \
+				else \
+					JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[],"; \
+				fi; \
+			else \
+				if [ "$$GROUP" = "Domain Owner" ] || [ "$$GROUP" = "Project Owner" ] || [ "$$GROUP" = "Admin" ]; then \
+					echo "Group $$GROUP exists but has no members. Adding caller ($$CALLER_EMAIL) as $$GROUP"; \
+					JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[\"$$CALLER_EMAIL\"],"; \
+				else \
+					JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[],"; \
+				fi; \
+			fi; \
+		else \
+			echo "Warning: Group '$$GROUP' not found in Identity Center"; \
+			if [ "$$GROUP" = "Domain Owner" ] || [ "$$GROUP" = "Project Owner" ] || [ "$$GROUP" = "Admin" ]; then \
+				echo "Adding caller ($$CALLER_EMAIL) as $$GROUP"; \
+				JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[\"$$CALLER_EMAIL\"],"; \
+			else \
+				JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[],"; \
+			fi; \
+		fi; \
+	done; \
+	JSON_STRUCTURE=$${JSON_STRUCTURE%,}; \
+	JSON_STRUCTURE="$$JSON_STRUCTURE}}"; \
+	aws ssm put-parameter \
+		--name "/$(APP)/$(ENV)/identity-center/users/test/6" \
+		--description "Map of IAM Identity Center users and their group associations" \
+		--type "SecureString" \
+		--value "$$JSON_STRUCTURE" \
+		--key-id "$$KMS_KEY_ID" \
+		--tags "Key=Environment,Value=$(ENV)" "Key=Application,Value=$(APP)"
+	echo "SSM parameter created/updated successfully"; \
+
 #################### Sagemaker Domain ####################
 
 deploy-domain-prereq:
@@ -275,6 +346,11 @@ deploy-glue-jars:
 
 #################### Lake Formation ####################
 
+set-up-lake-formation-admin-role:
+	aws lakeformation put-data-lake-settings \
+		--cli-input-json "{\"DataLakeSettings\": {\"DataLakeAdmins\": [{\"DataLakePrincipalIdentifier\": \"arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ADMIN_ROLE}\"}]}}" \
+		--region "${AWS_PRIMARY_REGION}"
+		
 create-glue-s3tables-catalog:
 	aws glue create-catalog \
         --cli-input-json '{"Name": "s3tablescatalog", "CatalogInput": { "FederatedCatalog": { "Identifier": "arn:aws:s3tables:${AWS_PRIMARY_REGION}:${AWS_ACCOUNT_ID}:bucket/*", "ConnectionName": "aws:s3tables" }, "CreateDatabaseDefaultPermissions": [], "CreateTableDefaultPermissions": [] } }' \
@@ -345,18 +421,18 @@ destroy-billing:
         --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-billing || true
 
 	@echo "Emptying S3 buckets"
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-secondary-log" || true	
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-secondary-log" || true	
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-secondary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-data-secondary-log" || true	
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-hive-secondary-log" || true	
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-billing-iceberg-secondary-log" || true
 
 	@echo "Destroying Billing Infrastructure"
 	(cd iac/roots/datalakes/billing; \
@@ -540,20 +616,18 @@ destroy-inventory:
         --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-inventory || true
 
 	@echo "Emptying S3 buckets"
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-secondary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-secondary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-secondary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-hive-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-hive-secondary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-iceberg-secondary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-destination-secondary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-inventory-data-source-secondary-log" || true
 
 	@echo "Destroying Inventory Infrastructure and Job"
 	(cd iac/roots/datalakes/inventory; \
@@ -677,7 +751,7 @@ destroy-splunk:
 	@echo "Emptying and deleting S3 Table"
 	aws s3tables delete-table \
         --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-splunk \
-        --namespace $(APP_NAME) --name splunk || true
+        --namespace $(APP_NAME) --name inventory || true
 
 	aws s3tables delete-namespace \
         --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-splunk \
@@ -687,10 +761,10 @@ destroy-splunk:
         --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-splunk || true
 
 	@echo "Emptying S3 buckets"
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-primary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-secondary" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-primary-log" || true
-	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-secondary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-iceberg-splunk-secondary-log" || true
 
 	@echo "Destroying Splunk"
 	(cd iac/roots/datalakes/splunk; \

@@ -7,7 +7,7 @@ data "aws_organizations_organization" "org" {}
 
 data "aws_kms_key" "ssm_kms_key" {
 
-  key_id   = "alias/${var.SSM_KMS_KEY_ALIAS}"
+  key_id = "alias/${var.SSM_KMS_KEY_ALIAS}"
 }
 
 resource "aws_identitystore_group" "groups" {
@@ -24,18 +24,18 @@ resource "aws_identitystore_user" "users" {
   user_name         = each.value.email
   display_name      = each.key
   name {
-    given_name      = each.value.given_name
-    family_name     = each.value.family_name
+    given_name  = each.value.given_name
+    family_name = each.value.family_name
   }
   emails {
-    value           = each.value.email
-    primary         = true
+    value   = each.value.email
+    primary = true
   }
 }
 
 resource "aws_identitystore_group_membership" "user_group_membership" {
 
-  for_each = { for user, details in var.USERS : user => details.groups }
+  for_each          = { for user, details in var.USERS : user => details.groups }
   identity_store_id = data.aws_ssoadmin_instances.identity_center.identity_store_ids[0]
   group_id          = aws_identitystore_group.groups[each.value[0]].group_id
   member_id         = aws_identitystore_user.users[each.key].user_id
@@ -52,13 +52,13 @@ resource "aws_ssoadmin_permission_set" "permissions" {
 
 resource "aws_ssoadmin_account_assignment" "identity_assignments" {
 
-  for_each            = toset(data.aws_organizations_organization.org.accounts[*].id)
-  instance_arn        = data.aws_ssoadmin_instances.identity_center.arns[0]
-  permission_set_arn  = aws_ssoadmin_permission_set.permissions["Admin"].arn
-  principal_type      = "GROUP"
-  principal_id        = aws_identitystore_group.groups["Admin"].group_id
-  target_type         = "AWS_ACCOUNT"
-  target_id           = each.value
+  for_each           = toset(data.aws_organizations_organization.org.accounts[*].id)
+  instance_arn       = data.aws_ssoadmin_instances.identity_center.arns[0]
+  permission_set_arn = aws_ssoadmin_permission_set.permissions["Admin"].arn
+  principal_type     = "GROUP"
+  principal_id       = aws_identitystore_group.groups["Admin"].group_id
+  target_type        = "AWS_ACCOUNT"
+  target_id          = each.value
 }
 
 resource "aws_iam_policy" "project_owner_policy" {
@@ -79,7 +79,7 @@ resource "aws_iam_policy" "project_owner_policy" {
         ]
         Resource = [
           "arn:aws:datazone:${local.region}:${local.account_id}:domain/*"
-        ]      }
+      ] }
     ]
   })
 }
@@ -100,7 +100,7 @@ resource "aws_iam_policy" "domain_owner_policy" {
         ]
         Resource = [
           "arn:aws:datazone:${local.region}:${local.account_id}:domain/*"
-        ]      }
+      ] }
     ]
   })
 }
@@ -145,7 +145,7 @@ resource "aws_iam_policy" "project_contributor_policy" {
         ]
       },
       {
-        Sid = "AllowDataToolsAccess",
+        Sid    = "AllowDataToolsAccess",
         Effect = "Allow",
         Action = [
           "glue:StartCompletion",
@@ -155,20 +155,20 @@ resource "aws_iam_policy" "project_contributor_policy" {
         ],
         Resource = [
           "arn:aws:datazone:${local.region}:${local.account_id}:domain/*"
-        ]      }
+      ] }
     ]
   })
 }
 
 resource "aws_ssoadmin_managed_policy_attachment" "policy_attachments" {
 
-  for_each          = {
+  for_each = {
     for item in flatten([
       for perm_set, details in var.PERMISSION_SETS : [
         for policy in details.policies : {
-          key                 = "${perm_set}-${policy}"
-          permission_set_arn  = aws_ssoadmin_permission_set.permissions[perm_set].arn
-          policy              = policy
+          key                = "${perm_set}-${policy}"
+          permission_set_arn = aws_ssoadmin_permission_set.permissions[perm_set].arn
+          policy             = policy
         }
       ]
     ]) : item.key => item
@@ -178,7 +178,7 @@ resource "aws_ssoadmin_managed_policy_attachment" "policy_attachments" {
   permission_set_arn = each.value.permission_set_arn
   managed_policy_arn = each.value.policy
 
-  depends_on         = [aws_ssoadmin_account_assignment.identity_assignments]
+  depends_on = [aws_ssoadmin_account_assignment.identity_assignments]
 }
 
 resource "aws_ssoadmin_customer_managed_policy_attachment" "domain_owner_attachment" {
@@ -211,15 +211,15 @@ resource "aws_ssoadmin_customer_managed_policy_attachment" "project_member_attac
 locals {
   group_memberships = {
     for group in aws_identitystore_group.groups :
-    group.display_name => [
+    group.display_name => flatten([
       for membership in aws_identitystore_group_membership.user_group_membership :
-      {
+      [
         for user in aws_identitystore_user.users :
-        user.user_name => user.user_id
+        user.user_name
         if user.user_id == membership.member_id
-      }
+      ]
       if membership.group_id == group.group_id
-    ]
+    ])
   }
 
   user_group_mappings = {

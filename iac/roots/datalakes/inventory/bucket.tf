@@ -101,3 +101,64 @@ resource "aws_s3_object" "destination_inventory_files" {
   kms_key_id   = data.aws_kms_key.s3_primary_key.arn
 }
 
+resource "aws_lakeformation_resource" "hive_s3_location" {
+
+  arn       = "arn:aws:s3:::${var.APP}-${var.ENV}-inventory-hive-primary"
+  role_arn  = data.aws_iam_role.glue_role.arn
+
+  use_service_linked_role     = false
+  hybrid_access_enabled       = false
+
+  depends_on = [ module.inventory_hive_bucket ]
+}
+
+resource "aws_lakeformation_permissions" "hive_deployer_role" {
+
+  principal   = local.role_arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.hive_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "hive_glue_role" {
+
+  principal   = data.aws_iam_role.glue_role.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.hive_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_resource" "iceberg_s3_location" {
+
+  arn       = "arn:aws:s3:::${var.APP}-${var.ENV}-inventory-iceberg-primary"
+  role_arn  = data.aws_iam_role.glue_role.arn
+
+  use_service_linked_role     = false
+  hybrid_access_enabled       = false
+
+  depends_on = [ module.inventory_iceberg_bucket ]
+}
+
+resource "aws_lakeformation_permissions" "iceberg_deployer_role" {
+
+  principal   = local.role_arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "iceberg_glue_role" {
+
+  principal   = data.aws_iam_role.glue_role.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+
+  data_location {
+    arn = aws_lakeformation_resource.iceberg_s3_location.arn
+  }
+}

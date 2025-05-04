@@ -74,15 +74,15 @@ resource "aws_iam_role_policy_attachment" "role_policy_attachment" {
 locals {
   group_memberships = {
     for group in aws_identitystore_group.groups :
-    group.display_name => [
+    group.display_name => flatten([
       for membership in aws_identitystore_group_membership.user_group_membership :
-      {
+      [
         for user in aws_identitystore_user.users :
-        user.user_name => user.user_id
+        user.user_name
         if user.user_id == membership.member_id
-      }
+      ]
       if membership.group_id == group.group_id
-    ]
+    ])
   }
 
   user_group_mappings = {
