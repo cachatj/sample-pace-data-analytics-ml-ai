@@ -35,13 +35,13 @@ In order to execute this deployment, please ensure you have installed the follow
 2. Run the following command to download codebase into your local directory:
 
 ```
-git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git` 
+git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git
 ```
 
 3. From your terminal, go to the root directory of the DAIVI codebase using:
 
 ```
-cd sample-pace-data-analytics-ml-ai`
+cd sample-pace-data-analytics-ml-ai
 ```
 
 ### Environment setup
