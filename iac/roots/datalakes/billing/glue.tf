@@ -173,9 +173,9 @@ resource "aws_glue_catalog_table" "billing_hive" {
     "EXTERNAL"               = "TRUE"
   }
 
-  depends_on = [module.billing_hive_bucket,
-    aws_lakeformation_permissions.hive_deployer_role,
-  aws_lakeformation_permissions.hive_glue_role]
+  depends_on = [module.billing_hive_bucket, 
+                aws_lakeformation_permissions.hive_deployer_role, 
+                aws_lakeformation_permissions.hive_glue_role]
 
   storage_descriptor {
 
@@ -734,9 +734,9 @@ resource "aws_glue_catalog_table" "billing_iceberg_static" {
     }
   }
 
-  depends_on = [module.billing_iceberg_bucket,
-    aws_lakeformation_permissions.iceberg_deployer_role,
-  aws_lakeformation_permissions.iceberg_glue_role]
+  depends_on = [module.billing_iceberg_bucket, 
+                aws_lakeformation_permissions.iceberg_deployer_role, 
+                aws_lakeformation_permissions.iceberg_glue_role]
 
   storage_descriptor {
 

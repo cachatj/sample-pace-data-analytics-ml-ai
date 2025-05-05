@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
+# Copyright 2025 Amazon.com and its affiliates; all rights reserved.
+# SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
 
 # This function reads the file that is supplied as the first function argument.
 # It then resolves all placeholder values found in that file by

@@ -35,7 +35,7 @@ In order to execute this deployment, please ensure you have installed the follow
 2. Run the following command to download codebase into your local directory:
 
 ```
-git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git
+git clone https://github.com/aws-samples/sample-pace-data-analytics-ml-ai.git 
 ```
 
 3. From your terminal, go to the root directory of the DAIVI codebase using:
@@ -273,15 +273,14 @@ To delete Account-level Instance:
    aws sso-admin delete-instance --instance-arn arn:aws:sso:<region>:<account-id>:instance/<instance-id>
 ```
 
-#### Using Your Existing IAM Identity Center (BYO IDC)
-If you already have IAM Identity Center implemented and want to use your existing instance, you can integrate it with SageMaker Unified Studio and Datazone modules. This integration requires storing your IAM Identity Center user mappings in AWS Systems Manager Parameter Store.
+### Using your Existing IAM Identity Center
+If you have an existing IAM Identity Center instance (either in your current AWS account or in another accessible AWS account), you can reuse it instead of creating a new one. To integrate your existing instance with SageMaker Unified Studio and Datazone modules, you will need to store the user group mappings in AWS Systems Manager Parameter Store.
 
-To configure the integration, run:
+There are two methods to configure user groups for your deployment: Discovery (DYO) and Manual (BYO).
 
-```
-make deploy-byo-idc
-```
-##### Required Groups
+#### 1. Discovery Method (Discover-your-own IDC)
+
+This method automatically discovers and maps existing IAM Identity Center groups to required roles.
 
 The command expects four user groups in your IAM Identity Center:
 - Admin
@@ -292,14 +291,14 @@ The command expects four user groups in your IAM Identity Center:
 ##### Automatic User Assignment
 
 The command handles various scenarios to ensure critical roles are always populated:
-  1. **For Admin, Domain Owner, and Project Owner groups:**
-     - If the group doesn't exist: The deployer's email (caller identity) is automatically added
-     - If the group exists but is empty: The deployer's email is automatically added
-     - If the group exists and has users: The existing users are preserved
-  2. **For Project Contributor group:**
-     - If the group doesn't exist: An empty list is created
-     - If the group exists but is empty: The list remains empty
-     - If the group exists and has users: The existing users are preserved
+1. **For Admin, Domain Owner, and Project Owner groups:**
+    - If the group doesn't exist: The deployer's email (caller identity) is automatically added
+    - If the group exists but is empty: The deployer's email is automatically added
+    - If the group exists and has users: The existing users are preserved
+2. **For Project Contributor group:**
+    - If the group doesn't exist: An empty list is created
+    - If the group exists but is empty: The list remains empty
+    - If the group exists and has users: The existing users are preserved
 
 ##### Why This Matters
 This automatic user assignment is crucial because:
@@ -307,7 +306,47 @@ This automatic user assignment is crucial because:
 - Projects creation requires at least one Project Owner
 - By automatically adding the deployer to these roles when needed, the command ensures these requirements are met and prevents deployment failures
 
-The command stores all user mappings in AWS Systems Manager Parameter Store in a format compatible with both SageMaker Unified Studio and Datazone modules.
+To use this method:
+```
+make deploy-dyo-idc
+```
+
+#### 2. Manual Method (Bring-your-own IDC)
+
+This method allows manual configuration of user groups and their members, ideal for scenarios where:
+
+- Your IAM Identity Center doesn't have groups matching our required group names
+- You want to specify custom group memberships without modifying existing IAM Identity Center groups
+- You prefer direct control over user assignments
+
+#### Requirements
+- A valid Identity Store ID
+- At least one valid email for Domain Owner group
+- At least one valid email for Project Owner group
+- Admin and Project Contributor groups can be empty
+
+To use this method:
+```
+make deploy-byo-idc
+```
+
+The command WILL:
+- Prompt for your Identity Store ID
+- Request email addresses for each group (Admin, Domain Owner, Project Contributor, Project Owner)
+- Allow multiple emails per group (using comma or space separation)
+- Validate email address formats
+- Show a preview of the complete configuration
+- Create/update the SSM parameter after confirmation
+
+The command will NOT perform these critical validations:
+- Verify if the provided Identity Store ID exists or is valid
+- Check if the entered email addresses belong to actual users in your IAM Identity Center
+
+⚠️ **User Responsibility:**
+1. Ensure the Identity Store ID is correct
+2. Verify all provided email addresses correspond to existing users in your IAM Identity Center
+
+❗ **Warning:** Providing incorrect information (invalid Identity Store ID or non-existent users) will not cause immediate errors but will lead to failures in subsequent deployment steps when the system attempts to assign permissions to these users.
 
 ## 3. **Sagemaker Domain**
 
@@ -669,7 +708,7 @@ Grant project owner permission to create custom asset type:
 2. Login to the Sagemaker Unified Studio using the domain owner role with "downer" in the name (`ann-chouvey-downer@example.com` in this tutorial)
 3. Click on "Govern->Domain units" to open "Domain Units" page
 4. Click "Corporate" to open the root domain unit
-5. Scroll down to click on "Metadata form creation policy"
+5. Scroll down to click on "Custom asset type creation policy"
 6. Click on "ADD POLICY GRANT" button
 7. Select "Corporate" as the project
 8. Select "Producer" project from the projects dropdown

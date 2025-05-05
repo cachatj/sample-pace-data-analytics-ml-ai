@@ -10,7 +10,7 @@ data "aws_iam_session_context" "current" {
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.name
-  role_arn   = data.aws_iam_session_context.current.issuer_arn
+  role_arn   = data.aws_iam_session_context.current.issuer_arn  
 }
 
 provider "aws" {

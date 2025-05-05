@@ -144,9 +144,9 @@ destroy-idc-acc:
 		terraform destroy -auto-approve;)
 		@echo "Finished Destroying Account-Level Identity Center"
 
-deploy-byo-idc:
+deploy-dyo-idc:
 	@echo "Creating SSM parameter with IAM Identity Center user mappings"
-	@if [ -z "$(APP)" ] || [ -z "$(ENV)" ]; then \
+	@if [ -z "$(APP_NAME)" ] || [ -z "$(ENV_NAME)" ]; then \
 		echo "Error: APP and ENV variables are required. Please set them using APP=<app-name> ENV=<environment>"; \
 		exit 1; \
 	fi; \
@@ -207,13 +207,99 @@ deploy-byo-idc:
 	JSON_STRUCTURE=$${JSON_STRUCTURE%,}; \
 	JSON_STRUCTURE="$$JSON_STRUCTURE}}"; \
 	aws ssm put-parameter \
-		--name "/$(APP)/$(ENV)/identity-center/users/test/6" \
+		--name "/$(APP_NAME)/$(ENV_NAME)/identity-center/users" \
 		--description "Map of IAM Identity Center users and their group associations" \
 		--type "SecureString" \
 		--value "$$JSON_STRUCTURE" \
 		--key-id "$$KMS_KEY_ID" \
-		--tags "Key=Environment,Value=$(ENV)" "Key=Application,Value=$(APP)"
+		--tags "Key=Environment,Value=$(ENV_NAME)" "Key=Application,Value=$(APP_NAME)"
 	echo "SSM parameter created/updated successfully"; \
+
+deploy-byo-idc:
+	@if [ -z "$(APP_NAME)" ] || [ -z "$(ENV_NAME)" ]; then \
+		echo "Error: APP and ENV variables are required. Please set them using APP=<app-name> ENV=<environment>"; \
+	fi; \
+	echo ""; \
+	echo "=== IAM Identity Center User Mapping ==="; \
+	echo ""; \
+	read -p "Enter Identity Store ID: " IDENTITY_STORE_ID; \
+	echo ""; \
+	echo "Note: You can separate multiple email addresses using either commas or spaces"; \
+	echo "Example: user1@example.com,user2@example.com  or  user1@example.com user2@example.com"; \
+	echo ""; \
+	KMS_KEY_ID=$$(aws kms describe-key --key-id alias/aws/ssm --query 'KeyMetadata.KeyId' --output text); \
+	JSON_STRUCTURE="{\"$$IDENTITY_STORE_ID\":{"; \
+	for GROUP in "Admin" "Domain Owner" "Project Contributor" "Project Owner"; do \
+		echo ""; \
+		echo "=== $$GROUP Configuration ==="; \
+		VALID_EMAILS=""; \
+		while true; do \
+			if [ "$$GROUP" = "Domain Owner" ] || [ "$$GROUP" = "Project Owner" ]; then \
+				echo "Enter email addresses for $$GROUP"; \
+				echo "(At least one valid email required)"; \
+			else \
+				echo "Enter email addresses for $$GROUP"; \
+				echo "(Press enter if none)"; \
+			fi; \
+			echo -n "> "; \
+			read EMAILS; \
+			if [ ! -z "$$EMAILS" ]; then \
+				EMAILS=$$(echo "$$EMAILS" | tr ',' ' '); \
+				VALID_EMAILS=""; \
+				for EMAIL in $$EMAILS; do \
+					if echo "$$EMAIL" | grep -qE '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$$'; then \
+						if [ -z "$$VALID_EMAILS" ]; then \
+							VALID_EMAILS="$$EMAIL"; \
+						else \
+							VALID_EMAILS="$$VALID_EMAILS $$EMAIL"; \
+						fi; \
+					else \
+						echo "⚠️  Warning: Invalid email format: $$EMAIL - skipping"; \
+					fi; \
+				done; \
+			fi; \
+			if [ "$$GROUP" = "Domain Owner" ] || [ "$$GROUP" = "Project Owner" ]; then \
+				if [ -z "$$VALID_EMAILS" ]; then \
+					echo "❌ Error: At least one valid email is required for $$GROUP. Please try again."; \
+					echo ""; \
+					continue; \
+				fi; \
+			fi; \
+			break; \
+		done; \
+		if [ ! -z "$$VALID_EMAILS" ]; then \
+			echo "✅ Valid emails accepted for $$GROUP"; \
+			echo ""; \
+			FORMATTED_EMAILS=$$(echo $$VALID_EMAILS | tr ' ' '\n' | awk -v ORS=, '{print "\""$$0"\""}' | sed 's/,$$/\n/'); \
+			JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[$$FORMATTED_EMAILS],"; \
+		else \
+			echo "ℹ️  No emails provided for $$GROUP"; \
+			echo ""; \
+			JSON_STRUCTURE="$$JSON_STRUCTURE\"$$GROUP\":[],"; \
+		fi; \
+	done; \
+	JSON_STRUCTURE=$${JSON_STRUCTURE%,}; \
+	JSON_STRUCTURE="$$JSON_STRUCTURE}}"; \
+	echo ""; \
+	echo "=== Review Configuration ==="; \
+	echo ""; \
+	echo "$$JSON_STRUCTURE" | jq .; \
+	echo ""; \
+	read -p "Do you want to proceed with creating/updating the SSM parameter? (y/n): " CONFIRM; \
+	if [ "$$CONFIRM" = "y" ]; then \
+		aws ssm put-parameter \
+			--name "/$(APP_NAME)/$(ENV_NAME)/identity-center/users" \
+			--description "Map of IAM Identity Center users and their group associations" \
+			--type "SecureString" \
+			--value "$$JSON_STRUCTURE" \
+			--key-id "$$KMS_KEY_ID" \
+			--tags "Key=Environment,Value=$(ENV_NAME)" "Key=Application,Value=$(APP_NAME)" && \
+		echo ""; \
+		echo "SSM parameter created/updated successfully"; \
+	else \
+		echo ""; \
+		echo "Operation cancelled"; \
+	fi
 
 #################### Sagemaker Domain ####################
 

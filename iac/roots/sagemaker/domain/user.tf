@@ -49,22 +49,22 @@ data "aws_identitystore_user" "domain_owners" {
 resource "awscc_datazone_user_profile" "user" {
   for_each = toset(nonsensitive(local.user_emails))
 
-  depends_on        = [null_resource.create_smus_domain]
+  depends_on = [ null_resource.create_smus_domain ]
   domain_identifier = local.domain_id
   user_identifier   = data.aws_identitystore_user.users[each.key].user_id
-  user_type         = "SSO_USER"
-  status            = "ASSIGNED"
+  user_type = "SSO_USER"
+  status = "ASSIGNED"
 }
 
 # Add 10 second delay before triggering "null_resource.add_root_owners"
 resource "time_sleep" "wait_10_seconds" {
-  depends_on      = [awscc_datazone_user_profile.user]
+  depends_on = [ awscc_datazone_user_profile.user ]
   create_duration = "10s"
 }
 
 resource "null_resource" "add_root_owners" {
-  depends_on = [time_sleep.wait_10_seconds]
-  for_each   = toset(nonsensitive(local.domain_owner_emails))
+  depends_on = [ time_sleep.wait_10_seconds ]
+  for_each = toset(nonsensitive(local.domain_owner_emails))
 
   triggers = {
     domain_id = local.domain_id

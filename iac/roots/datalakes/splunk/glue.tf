@@ -132,9 +132,9 @@ resource "aws_glue_catalog_table" "splunk_iceberg" {
     }
   }
 
-  depends_on = [module.iceberg_splunk_bucket,
-    aws_lakeformation_permissions.iceberg_deployer_role,
-  aws_lakeformation_permissions.iceberg_glue_role]
+  depends_on = [module.iceberg_splunk_bucket, 
+                aws_lakeformation_permissions.iceberg_deployer_role,
+                aws_lakeformation_permissions.iceberg_glue_role]
 
   storage_descriptor {
     location = var.SPLUNK_ICEBERG_BUCKET

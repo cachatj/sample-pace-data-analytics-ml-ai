@@ -31,17 +31,17 @@ resource "aws_glue_security_configuration" "glue_security_configuration_inventor
   encryption_configuration {
     cloudwatch_encryption {
       cloudwatch_encryption_mode = "SSE-KMS"
-      kms_key_arn                = data.aws_kms_key.cloudwatch_kms_key.arn
+      kms_key_arn = data.aws_kms_key.cloudwatch_kms_key.arn
     }
 
     job_bookmarks_encryption {
       job_bookmarks_encryption_mode = "CSE-KMS"
-      kms_key_arn                   = data.aws_kms_key.glue_kms_key.arn
+      kms_key_arn = data.aws_kms_key.glue_kms_key.arn
     }
 
     s3_encryption {
       s3_encryption_mode = "SSE-KMS"
-      kms_key_arn        = data.aws_kms_key.glue_kms_key.arn
+      kms_key_arn = data.aws_kms_key.glue_kms_key.arn
     }
   }
 }
@@ -157,8 +157,8 @@ resource "aws_glue_data_catalog_encryption_settings" "encryption_setting" {
     }
 
     encryption_at_rest {
-      catalog_encryption_mode = "SSE-KMS"
-      sse_aws_kms_key_id      = data.aws_kms_key.glue_kms_key.arn
+      catalog_encryption_mode         = "SSE-KMS"
+      sse_aws_kms_key_id              = data.aws_kms_key.glue_kms_key.arn
     }
   }
 }
@@ -181,9 +181,9 @@ resource "aws_glue_catalog_table" "inventory_hive" {
     "EXTERNAL"               = "TRUE"
   }
 
-  depends_on = [module.inventory_hive_bucket,
-    aws_lakeformation_permissions.hive_deployer_role,
-  aws_lakeformation_permissions.hive_glue_role]
+  depends_on = [module.inventory_hive_bucket, 
+                aws_lakeformation_permissions.hive_deployer_role,
+                aws_lakeformation_permissions.hive_glue_role]
 
   storage_descriptor {
 
@@ -302,9 +302,9 @@ resource "aws_glue_catalog_table" "inventory_iceberg_static" {
     }
   }
 
-  depends_on = [module.inventory_iceberg_bucket,
-    aws_lakeformation_permissions.iceberg_deployer_role,
-  aws_lakeformation_permissions.iceberg_glue_role]
+  depends_on = [module.inventory_iceberg_bucket, 
+                aws_lakeformation_permissions.iceberg_deployer_role,
+                aws_lakeformation_permissions.iceberg_glue_role]
 
   storage_descriptor {
 
@@ -450,7 +450,7 @@ resource "aws_glue_data_quality_ruleset" "inventory_iceberg_ruleset" {
   ]
   EOF
 }
-
+ 
 resource "aws_glue_job" "inventory_hive_job" {
 
   name              = "${var.APP}-${var.ENV}-inventory-hive"

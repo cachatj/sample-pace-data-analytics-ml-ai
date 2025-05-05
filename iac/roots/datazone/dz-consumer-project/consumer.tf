@@ -5,7 +5,7 @@ data "aws_ssoadmin_instances" "identity_center" {}
 
 data "aws_kms_key" "ssm_kms_key" {
 
-  key_id = "alias/${var.SSM_KMS_KEY_ALIAS}"
+  key_id   = "alias/${var.SSM_KMS_KEY_ALIAS}"
 }
 
 locals {
@@ -17,7 +17,7 @@ locals {
   # Extract only Project Owner
   project_owner_emails = flatten([
     for domain, groups in local.json_data : groups["Project Owner"]
-  ]) # Taking all the Project Owner emails
+  ])  # Taking all the Project Owner emails
 }
 
 data "aws_identitystore_user" "project_owners" {
@@ -44,15 +44,15 @@ module "consumer_project" {
 
   source = "../../../templates/modules/datazone-project/project"
 
-  APP                 = var.APP
-  ENV                 = var.ENV
-  KMS_KEY             = data.aws_kms_key.ssm_kms_key.arn
-  USAGE               = "Datazone"
-  domain_id           = local.domain_id
-  project_name        = var.PROJECT_CONSUMER_NAME
-  project_owner       = local.project_owner_ids[0]
-  project_description = var.PROJECT_CONSUMER_DESCRIPTION
-  glossary_terms      = var.PROJECT_GLOSSARY
+  APP                       = var.APP
+  ENV                       = var.ENV
+  KMS_KEY                   = data.aws_kms_key.ssm_kms_key.arn
+  USAGE                     = "Datazone"
+  domain_id                 = local.domain_id
+  project_name              = var.PROJECT_CONSUMER_NAME
+  project_owner             = local.project_owner_ids[0]
+  project_description       = var.PROJECT_CONSUMER_DESCRIPTION
+  glossary_terms            = var.PROJECT_GLOSSARY
 
 }
 
@@ -61,18 +61,18 @@ module "consumer_project_env" {
 
   source = "../../../templates/modules/datazone-project/environment"
 
-  APP                      = var.APP
-  ENV                      = var.ENV
-  KMS_KEY                  = data.aws_kms_key.ssm_kms_key.arn
-  USAGE                    = "Datazone"
-  domain_id                = local.domain_id
-  project_id               = module.consumer_project.project_id
-  region                   = data.aws_region.current.name
-  profile_name             = var.CONSUMER_PROFILE_NAME
-  env_name                 = var.CONSUMER_ENV_NAME
-  profile_description      = var.CONSUMER_PROFILE_DESCRIPTION
-  account_id               = data.aws_caller_identity.current.account_id
-  environment_blueprint_id = data.aws_ssm_parameter.datalake_profile_id.value
-  depends_on               = [module.consumer_project]
+  APP                       = var.APP
+  ENV                       = var.ENV
+  KMS_KEY                   = data.aws_kms_key.ssm_kms_key.arn
+  USAGE                     = "Datazone"
+  domain_id                 = local.domain_id
+  project_id                = module.consumer_project.project_id
+  region                    = data.aws_region.current.name
+  profile_name              = var.CONSUMER_PROFILE_NAME
+  env_name                  = var.CONSUMER_ENV_NAME
+  profile_description       = var.CONSUMER_PROFILE_DESCRIPTION
+  account_id                = data.aws_caller_identity.current.account_id
+  environment_blueprint_id  = data.aws_ssm_parameter.datalake_profile_id.value
+  depends_on                = [ module.consumer_project ]
 }
 
