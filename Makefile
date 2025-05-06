@@ -88,7 +88,7 @@ deploy-iam-roles:
 	@echo "Deploying IAM Roles"
 	(cd iac/roots/foundation/iam-roles; \
 		terraform init; \
-		terraform apply -auto-approve;)
+		terraform apply -var CURRENT_ROLE="$(ADMIN_ROLE)" -auto-approve;)
 		@echo "Finished Deploying IAM Roles"
 
 destroy-iam-roles:

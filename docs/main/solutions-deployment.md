@@ -49,17 +49,13 @@ cd sample-pace-data-analytics-ml-ai
 #### Input variable names used in the prototype and their meanings
 
 ```
+# 12 digit AWS account ID to deploy resources to
+AWS_ACCOUNT_ID 
+
 # The application name that is used to name resources
 # It is best to use a short value to avoid resource name length limits
 # Example: daivi
 APP_NAME 
-
-# 12 digit AWS account ID to deploy resources to
-AWS_ACCOUNT_ID 
-
-# AWS region used as the default for AWS CLI commands
-# Example: us-east-1
-AWS_DEFAULT_REGION 
 
 # The environment name that is used to name resources and to determine
 # the value of environment-specific configurations.
@@ -75,10 +71,6 @@ AWS_PRIMARY_REGION
 # Secondary AWS region to deploy application resources to
 # Example: us-west-2
 AWS_SECONDARY_REGION 
-
-# The name of the S3 bucket that holds Terraform state files
-TF_S3_BACKEND_NAME 
-
 ```
 <br>
 
@@ -163,24 +155,7 @@ You will need to deploy the following modules in order to deploy the whole solut
 
 - Open Makefile in root folder
 - Line #16 of the make file has a constant called "ADMIN_ROLE"
-- Please specify the name of the IAM role you will use to login to AWS management console. This role will be granted lake formation access to the Glue databases, so that you can execute queries against the Glue databases using the Athena console. 
-
-## Prep2. Set up Admin Role as LakeFormation Admininstrator: 
-
-From your terminal, go to the root directory of the DAIVI codebase and execute the following command. This will add the Admin role as LakeFormation admin.
-
-```
-make set-up-lake-formation-admin-role
-``` 
-
-## Prep3: Delete "default" Glue Database
-
-Certain Glue Jobs or EMR Jobs may fail if "default" Glue database exists. Please note that the "default" Glue database may also get created automatically, when you execute certain glue jobs. If you notice an error, either in a Glue job or an EMR job, related to a specific role not having permissions to "default" glue database, then please delete the "default" Glue database if it exists following the steps outlined above. 
-
-```
-make grant-default-database-permissions 
-make drop-default-database
-```
+- Please specify the name of the IAM role you will use to login to AWS management console. This role will be granted lake formation access to the Glue databases, so that you can execute queries against the Glue databases using the Athena console.
 
 ## 1. **Foundation**
 
@@ -778,6 +753,7 @@ make clean-tf-cache
 
 ## Troubleshooting 
 
+### Outdated CLI  version 
 If you encounter this error during terraform execution:
 ```
 │ Error: local-exec provisioner error
@@ -799,3 +775,16 @@ aws --version
 3. After updating, retry the terraform operation
 
 **Note**: The local-exec provisioner requires proper AWS CLI configuration to execute AWS commands successfully.
+
+### Glue/EMR Jobs Fail: "default" Database Conflict
+
+Certain Glue Jobs or EMR Jobs may fail if "default" Glue database exists. Please note that the "default" Glue database may also get created automatically, when you execute certain glue jobs. 
+
+#### Resolution
+
+If you notice an error, either in a Glue job or an EMR job, related to a specific role not having permissions to "default" glue database, then please delete the "default" Glue database if it exists following the steps outlined above.
+
+```
+make grant-default-database-permissions 
+make drop-default-database
+```

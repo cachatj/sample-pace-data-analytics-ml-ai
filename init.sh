@@ -2,6 +2,7 @@
 
 # Copyright 2025 Amazon.com and its affiliates; all rights reserved.
 # SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
+# Licensed under the Amazon Software License  https://aws.amazon.com/asl/
 
 # This function reads the file that is supplied as the first function argument.
 # It then resolves all placeholder values found in that file by
@@ -36,20 +37,15 @@ resolve_placeholders () {
 echo -e "\nGreetings prototype user! Before you can get started deploying this prototype,"
 echo -e "we need to collect some settings values from you...\n"
 
+echo -e "\n12 digit AWS account ID to deploy resources to"
+read -p "Enter value: " answer
+AWS_ACCOUNT_ID="$answer"
+
 echo -e "\nThe application name that is used to name resources
 It is best to use a short value to avoid resource name length limits
 Example: daivi"
 read -p "Enter value: " answer
 APP_NAME="$answer"
-
-echo -e "\n12 digit AWS account ID to deploy resources to"
-read -p "Enter value: " answer
-AWS_ACCOUNT_ID="$answer"
-
-echo -e "\nAWS region used as the default for AWS CLI commands
-Example: us-east-1"
-read -p "Enter value: " answer
-AWS_DEFAULT_REGION="$answer"
 
 echo -e "\nThe environment name that is used to name resources and to determine
 the value of environment-specific configurations.
@@ -62,6 +58,7 @@ echo -e "\nPrimary AWS region to deploy application resources to
 Example: us-east-1"
 read -p "Enter value: " answer
 AWS_PRIMARY_REGION="$answer"
+AWS_DEFAULT_REGION="$answer"
 
 echo -e "\nSecondary AWS region to deploy application resources to
 Example: us-west-2"

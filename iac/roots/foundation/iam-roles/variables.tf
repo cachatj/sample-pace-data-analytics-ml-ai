@@ -36,3 +36,7 @@ variable "SECRETS_MANAGER_KMS_KEY_ALIAS" {
   type = string
 }
 
+variable "CURRENT_ROLE" {
+  description = "The role used for deployment of the solution"
+  type        = string
+}
