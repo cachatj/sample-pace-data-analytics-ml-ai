@@ -1,4 +1,4 @@
-# **DAIVI** : *A Reference Solution to accelerate development of Data, Analytics, AI and Visualization applications on AWS*
+# **DAIVI** : *A Reference Solution with Terraform modules to accelerate development of Data, Analytics, AI and Visualization applications on AWS*
 
 ## Table of Contents
 - [About DAIVI](#about-daivi)
@@ -15,7 +15,7 @@
 
 ## About DAIVI on AWS
 
-DAIVI is a reference solution with IAC modules to accelerate development of Data, Analytics, AI and Visualization applications on AWS using the next generation "**Amazon SageMaker**" platform. The goal of the DAIVI solution is to provide engineers with sample infrastructure-as-code modules and application modules to build their enterprise data platform on AWS. The solution is being developed working backward from customer priorities. 
+DAIVI is a reference solution with Terraform modules to accelerate development of Data, Analytics, AI and Visualization applications on AWS using the next generation "**Amazon SageMaker**" platform. The goal of the DAIVI solution is to provide engineers with sample Terraform modules to build their enterprise data platform on AWS. The solution is being developed working backward from customer priorities. 
 
 The solution currently supports the first 6 modules marked in green in the solution roadmap below, that include 
 
