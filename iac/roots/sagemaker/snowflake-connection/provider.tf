@@ -1,0 +1,32 @@
+// Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+
+provider "aws" {
+
+  region = var.AWS_PRIMARY_REGION
+
+  default_tags {
+
+    tags = {
+      Application = var.APP
+      Environment = var.ENV
+      Usage       = "snowflake"
+    }
+  }
+}
+
+provider "aws" {
+
+  alias  = "secondary"
+  region = var.AWS_SECONDARY_REGION
+
+  default_tags {
+    tags = {
+      Application = var.APP
+      Environment = var.ENV
+      Usage       = "snowflake"
+    }
+  }
+}
+
+provider "time" {}

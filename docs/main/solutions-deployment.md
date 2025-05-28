@@ -48,6 +48,9 @@ cd sample-pace-data-analytics-ml-ai
 
 #### Input variable names used in the prototype and their meanings
 
+> [!CAUTION]
+> Please do not use '-' sign in app or environment name in this step. This will break SQL quesry executions in the Datalake modules.
+
 ```
 # 12 digit AWS account ID to deploy resources to
 AWS_ACCOUNT_ID 
@@ -126,32 +129,34 @@ The solution consists of a number of modules. Each module consists of a number o
 
 You will need to deploy the following modules in order to deploy the whole solution. 
 
-| Order | Module                                    |
-|-------|-------------------------------------------|
-| 1     | Foundation                                |
-| 2     | IAM Identity Center                       |
-| 3     | Sagemaker Domain                          | 
-| 4     | Sagemaker Projects                        | 
-| 5     | Glue Iceberg Jar File                     | 
-| 6     | Lake Formation                            | 
-| 7     | Athena                                    |
-| 8     | Data Lakes                                |
-| 9     | Billing Data Lake - Static                | 
-| 10    | Billing Data Lake - Dynamic               | 
-| 11    | Billing Data Lake - CUR (After 24 hours)  | 
-| 12    | Inventory Data Lake - Static              | 
-| 13    | Inventory Data Lake - Dynamic             | 
-| 14    | Splunk Data Lake                          | 
-| 15    | Sagemaker Project Configuration           | 
-| 16    | Datazone Domain and Projects              | 
-| 17    | Quicksight Subscription                   | 
-| 18    | Quicksight Visualization                  |
-| 19    | Customer Data Lineage                     |
-| 20    | EMR Serverless with Jupyter Notebook      |
-| 21    | Clean Up Cache                            |
+| Order | Module                                                                |
+|-------|----------------------------------------------------------------------|
+| 1     | [Foundation](#1-foundation)                                           |
+| 2     | [IAM Identity Center](#2-iam-identity-center)                         |
+| 3     | [Sagemaker Domain](#3-sagemaker-domain)                               | 
+| 4     | [Sagemaker Projects](#4-sagemaker-projects)                           | 
+| 5     | [Glue Iceberg Jar File](#5-glue-iceberg-jar-file)                     | 
+| 6     | [Lake Formation](#6-lake-formation)                                   | 
+| 7     | [Athena](#7-athena)                                                   |
+| 8     | [Data Lakes](#8-data-lakes)                                           |
+| 9     | [Billing Data Lake - Static](#9-billing-data-lake---static)           | 
+| 10    | [Billing Data Lake - Dynamic](#10-billing-data-lake---dynamic)        | 
+| 11    | [Billing Data Lake - CUR (After 24 hours)](#11-billing-data-lake---cur)| 
+| 12    | [Inventory Data Lake - Static](#12-inventory-data-lake---static)      | 
+| 13    | [Inventory Data Lake - Dynamic](#13-inventory-data-lake---dynamic)    | 
+| 14    | [Splunk Data Lake](#14-splunk-datalake)                               | 
+| 15    | [Sagemaker Project Configuration](#15-sagemaker-project-configuration)| 
+| 16    | [Datazone Domain and Projects](#16-datazone-domain-and-projects)      | 
+| 17    | [Snowflake Connection](#17-snowflake-connection)                      |
+| 18    | [Snowflake ETL](#18-snowflake-etl)                                    |
+| 19    | [Quicksight Subscription](#19-quicksight-subscription)                | 
+| 20    | [Quicksight Visualization](#20-quicksight-visualization)              |
+| 21    | [Customer Data Lineage](#21-customer-data-lineage)                    |
+| 22    | [EMR Serverless with Jupyter Notebook](#22-emr-serverless-with-jupyter-notebook) |
+| 23    | [Clean Up Cache](#23-clean-up-cache)                                  |
 ---
 
-## Prep1: Set up Admin Role in Makefile
+## Prep: Set up Admin Role in Makefile
 
 - Open Makefile in root folder
 - Line #16 of the make file has a constant called "ADMIN_ROLE"
@@ -177,28 +182,37 @@ make deploy-buckets
 
 ## 2. **IAM Identity Center**
 
-The IAM Identity Center module deploys an IAM Identity Center. It is recommended that you deploy an organization level Identity Center. Alternately, you can choose to deploy an account level Identity Center if you prefer. 
+The IAM Identity Center module enables deployment of either:
+- An organization-wide instance (managed through AWS Organizations)
+- An account-specific instance (isolated to a single AWS account)
+
+Choose the deployment type that best suits your organization's requirements.[Review AWS Documentation](https://docs.aws.amazon.com/singlesignon/latest/userguide/identity-center-instances.html) to understand the differences between Organization-level versus Account-level Identity Center
+
 
 #### Before deploying this step: 
 
 **Important Note**: Only one instance can be deployed across all regions, and it must be either Organization-level or Account-level.
-- [Review AWS Documentation](https://docs.aws.amazon.com/singlesignon/latest/userguide/identity-center-instances.html) to understand the differences between Organization-level versus Account-level Identity Center
 
-Before configuring Identity Center using make targets:
-1. Enable the desired version of Identity Center (Organization-level or Account-level) manually on the IAM Identity Center Console
+#### To deploy the organization level identity center configuration:
+
+**Note**: This step is only applied to organization-level IAM Identity Center. For account-level or standalone instance, this step has been automated as part of the deployment process. 
+Before configuring Identity Center for organization-level using make targets:
+1. Enable the Organization-level manually on the IAM Identity Center Console
 - Navigate to IAM Identity Center in the console
 - For organization-level: Select "Enable" > *Enable IAM Identity Center with AWS Organizations* > "Enable"
-- For account-level: Select "Enable" > *Enable an account instance of IAM Identity Center* > "Enable"
 2. Ensure no existing Identity Center instance is running
 - Must delete previous instance before deploying new one
 - Currently no programmatic support is available to enable Identity Center through IaC
 
 
+```
+make deploy-idc-org
+```
 
 #### To deploy the organization level identity center configuration:
 
 ```
-make deploy-idc-org
+make deploy-idc-acc
 ```
 
 | Target        | Result                                                                                      | Verification |  
@@ -614,7 +628,150 @@ make deploy-datazone-custom-project
 | deploy-datazone-project-prereq  | Deploy Datazone Project Prerequisites | Verify that Datazone project prerequisites are created **producer_project**, **consumer_project** and **custom_project** are created in the Datazone domain **Exchange**  | deploy-datazone-procuder-project  | Deploy Datazone Producer Project | Verify that Datazone **Producer** project is created in the Datazone domain **Exchange**  | deploy-datazone-consumer-project  | Deploy Datazone Consumer Project | Verify that Datazone **Consumer** project is created in the Datazone domain **Exchange**  | deploy-datazone-custom-project  | Deploy Datazone Consumer Project | Verify that Datazone **Custom** project is created in the Datazone domain **Exchange**  | 
 ---
 
-## 17. **Quicksight Subscription**
+## 17. **Snowflake Connection**
+
+This module deploys a Snowflake connection for SageMaker Lakehouse, enabling data access between SageMaker Studio UI and Snowflake.
+
+#### Prerequisites
+
+Before deploying this module, you need:
+
+1. A Snowflake account with appropriate access credentials
+2. Snowflake objects (database, warehouse, table, schema) must be created and accessible. For detailed instructions on creating and setting up free trial Snowflake for use with SageMaker, refer to [Amazon SageMaker with Snowflake as datasource](https://github.com/aws-samples/amazon-sagemaker-w-snowflake-as-datasource/blob/main/snowflake-instructions.md).
+3. > [!IMPORTANT]
+   > All Snowflake object names (database, schema, table, columns names, warehouse name) must be in lowercase due to current limitations in Athena's Snowflake connector.
+
+For information about Athena-Snowflake connector limitations, see [AWS documentation](https://docs.aws.amazon.com/athena/latest/ug/connectors-snowflake.html#connectors-snowflake-limitations).
+
+#### Snowflake Setup Guide
+
+Before deploying the connection, you need to ensure your Snowflake objects are properly configured with lowercase names. If you don't have appropriate lowercase object or would like to set them up for this module deployment, follow these steps in your Snowflake account:
+
+1. **Login to Snowflake Web Interface (make sure you are logged in as `ACCOUNTADMIN`)**:
+   - Navigate to your Snowflake account URL (e.g., `https://youraccount.snowflakecomputing.com`)
+   - Login with your admin credentials
+
+2. **Create Lowercase Database and Schema**:
+   - Open a Snowflake worksheet and execute:
+   ```sql
+   -- Create database and schema with lowercase names
+   CREATE DATABASE IF NOT EXISTS "daivi_db";
+   USE DATABASE "daivi_db";
+   CREATE SCHEMA IF NOT EXISTS "daivi_schema";
+   USE SCHEMA "daivi_schema";
+   ```
+
+3. **Create Sample Table with Lowercase Name**:
+   ```sql
+   -- Create a sample table with lowercase name
+   CREATE OR REPLACE TABLE "daivi_sample_table" (
+     "id" INTEGER,
+     "name" STRING,
+     "value" FLOAT
+   );
+   
+   -- Insert sample data
+   INSERT INTO "daivi_sample_table" VALUES
+     (1, 'item1', 10.5),
+     (2, 'item2', 20.3),
+     (3, 'item3', 30.7);
+   ```
+
+4. **Create or Verify Lowercase Warehouse**:
+   ```sql
+   -- Create a warehouse with lowercase name
+   CREATE WAREHOUSE IF NOT EXISTS "daivi_wh"
+   WITH WAREHOUSE_SIZE = 'XSMALL'
+   AUTO_SUSPEND = 60
+   AUTO_RESUME = TRUE;
+   ```
+
+5. **Test Query**:
+   ```sql
+   -- Test query to verify data access
+   USE WAREHOUSE "daivi_wh";
+   USE DATABASE "daivi_db";
+   USE SCHEMA "daivi_schema";
+   SELECT * FROM "daivi_sample_table";
+   ```
+
+If you followed steps above to create your snowflake object, then use these lowercase values in the next steps of the deployment:
+- Database: `daivi_db`
+- Warehouse: `daivi_wh`
+- Schema: `daivi_schema`
+
+#### Required Information
+
+When running the deployment, you will be prompted to provide the following information:
+
+1. **Snowflake Connection Name** - Name for the connection (defaults to 'snowflake' if not specified)
+2. **Snowflake Username** - Your Snowflake account username
+3. **Snowflake Password** - Your Snowflake account password
+4. **Snowflake Host** - Your Snowflake account URL (e.g., `youraccount.snowflakecomputing.com`)
+5. **Snowflake Port** - Port number for Snowflake connection (defaults to 443 if not specified)
+6. **Snowflake Warehouse** - Name of the warehouse to use (must be lowercase)
+7. **Snowflake Database** - Name of the database to connect to (must be lowercase)
+8. **Snowflake Schema** - Name of the schema within the database (must be lowercase)
+
+These credentials will be securely stored in AWS Secrets Manager and used by the DataZone connection.
+
+#### To deploy the module:
+
+```
+make deploy-snowflake-connection
+```
+
+| Target                     | Result                                                | Verification                                     | 
+|----------------------------|-------------------------------------------------------|--------------------------------------------------|
+| deploy-snowflake-connection | Creates a DataZone connection to Snowflake for the Producer project | Verify that the following resources are created: <br> 1. AWS Secrets Manager secret containing Snowflake credentials: {app}-{env}-snowflake-credentials <br> 2. Lambda function to manage the DataZone connection: {app}-{env}-datazone-conn-lambda <br> 3. IAM role for the Lambda function: {app}-{env}-lambda-datazone-conn-role <br> 4. SNS topic for Lambda DLQ: {app}-{env}-datazone-conn-lambda-dlq <br> 5. Login to SageMaker DataZone Producer project and verify the Snowflake connection appears in the connections list |
+
+#### Post-Deployment Verification
+
+After successful deployment, you should verify that the Snowflake connection is properly established:
+
+1. Login to SageMaker Unified Studio using the Project Owner credentials (username containing "powner", e.g., `lois-lanikini-powner@example.com`)
+2. Navigate to the Producer project
+3. Select "Data" from the top navigation menu
+4. Click on "Connections" in the left sidebar
+5. **Note**: It may take 3-5 minutes for the connection to be fully established and appear in SageMaker Unified Studio
+6. You should see your Snowflake connection in the list of available connections
+7. You can now use this connection to query Snowflake data directly from SageMaker notebooks and DataZone projects
+---
+
+## 18. **Snowflake ETL**
+
+This module creates a Glue job that generates synthetic trading data and loads it into Snowflake.
+
+#### Prerequisites
+
+> [!CAUTION]
+> Module 17 (Snowflake Connection) must be deployed successfully before proceeding with this module.
+
+#### To deploy the module:
+
+```
+make deploy-z-etl-snowflake
+make start-trading-data-generator-job (wait for glue job to complete)
+make grant-lake-formation-snowflake-catalog (wait for snowflake catalog to be created in Lake Formation console before running this command)
+```
+
+| Target                     | Result                                                | Verification                                     | 
+|----------------------------|-------------------------------------------------------|--------------------------------------------------|
+| deploy-z-etl-snowflake | Creates a Glue job that generates synthetic trading data and loads it into Snowflake | Verify the following Glue job is created: <br> 1. {app}-{env}-trading-data-generator |
+| start-trading-data-generator-job | Runs the Glue job to generate and load trading data into Snowflake | Verify the Glue job starts and completes successfully |
+| grant-lake-formation-snowflake-catalog | Grants Lake Formation permissions to access Snowflake data through catalog | Verify that the permission is added in Lake Formation |
+
+#### Post-Deployment Verification
+
+After successful deployment, you should verify that the trading data was successfully loaded:
+- Login to SageMaker Unified Studio using the Project Owner credentials (username containing "powner", e.g., `lois-lanikini-powner@example.com`)
+- Navigate to the Producer project
+- Select "Data" from the top left navigation menu
+- Expand "Lakehouse" arrow
+- You should see the "trading_orders" table available inside the Snowflake connection you created in the previous step
+---
+
+## 19. **Quicksight Subscription**
 
 This module deploys subscription for quicksight.
 
@@ -637,7 +794,7 @@ Currently (as of March 2025), there is a known limitation when creating a QuickS
 
 
 
-## 18. **Quicksight Visualization**
+## 19. **Quicksight Visualization**
 
 This module deploys datasource, datasets and dashboard visualization for quicksight. 
 
@@ -673,7 +830,7 @@ make deploy-quicksight-dataset
 | deploy-quicksight-dataset | Deploy QuickSight dataset and reports | Verify that you see a {app}_{env}_Billing_Dashboard populated with data  |
 ---
 
-## 19. **Custom Data Lineage**
+## 20. **Custom Data Lineage**
 
 This module helps users create custom assets and publish custom lineage to Sagemaker Catalog. 
 
@@ -714,7 +871,7 @@ Verify custom assets and custom lineage:
 7. Click on "3 columns" drop down in "Trade" asset to expand the columns
 8. You should see column level lineage between "Order" and "Trade" assets 
 
-## 20. **EMR Serverless with Jupyter Notebook**
+## 21. **EMR Serverless with Jupyter Notebook**
 
 This module helps users create a Jupyter Notebook and execute a Spark query against Lakehouse using EMR Serverless. 
 
@@ -743,7 +900,7 @@ spark.sql('SELECT * FROM daivi_dev1_billing.daivi_dev1_billing_hive limit 10;')
 11. Execute the notebook
 12. Please wait for the Spark engine to start and exeucte the query and display the results
 
-## 21. **Clean Up Cache**
+## 22. **Clean Up Cache**
 
 This module helps users clean up Terraform cache from local machine. Please run the following make command to clean up local cache. 
 

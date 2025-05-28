@@ -15,13 +15,13 @@ resource "aws_iam_role" "smus_domain_manage_access_role" {
           Service = "datazone.amazonaws.com"
         }
         Condition = {
-          "StringEquals": {
-            "aws:SourceAccount": local.account_id
+          "StringEquals" : {
+            "aws:SourceAccount" : local.account_id
           },
-          "ArnEquals": {
-            "aws:SourceArn": "arn:aws:datazone:${local.region}:${local.account_id}:domain/${local.domain_id}"
+          "ArnEquals" : {
+            "aws:SourceArn" : "arn:aws:datazone:${local.region}:${local.account_id}:domain/${local.domain_id}"
           }
-        }        
+        }
       }
     ]
   })
@@ -44,7 +44,7 @@ resource "aws_iam_role_policy" "smus_domain_manage_access_role_policy" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "secretsmanager:ResourceTag/AmazonDataZoneDomain": "${local.domain_id}"
+            "secretsmanager:ResourceTag/AmazonDataZoneDomain" : "${local.domain_id}"
           }
         }
       }
@@ -54,7 +54,7 @@ resource "aws_iam_role_policy" "smus_domain_manage_access_role_policy" {
 
 # Attach other AWS managed policies that the Console created role has
 resource "aws_iam_role_policy_attachment" "smus_domain_manage_access_role_policy_attachments" {
-  
+
   for_each = toset([
     "arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy",
     "arn:aws:iam::aws:policy/service-role/AmazonDataZoneRedshiftManageAccessRolePolicy",
@@ -71,7 +71,7 @@ resource "aws_kms_key_policy" "smus_domain_manage_access_role_kms_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-    {
+      {
         Sid    = "Enable IAM User Permissions"
         Effect = "Allow"
         Principal = {
@@ -79,13 +79,22 @@ resource "aws_kms_key_policy" "smus_domain_manage_access_role_kms_policy" {
         }
         Action   = "kms:*"
         Resource = "*"
-      },      
+      },
       {
         Effect = "Allow"
         Principal = {
           AWS = aws_iam_role.smus_domain_manage_access_role.arn
         }
-        Action = "kms:*"
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "TO BE SCOPED DOWN - Allow access for SageMaker Lakehouse Federated Query"
+        Effect = "Allow"
+        Principal = {
+          AWS = "*"
+        }
+        Action   = "kms:*"
         Resource = "*"
       }
     ]

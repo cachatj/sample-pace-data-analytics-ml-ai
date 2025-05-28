@@ -1,7 +1,7 @@
 # Design Approach
 
 ## Project Background
-DAIVI was contextualized from a cost analytics use case. The clients were asking for a batch data pipeline that is stored in an Ice Berg data lake, in which cost data comes from three major sources:
+DAIVI was contextualized from a cost analytics use case. The clients were asking for a batch data pipeline that is stored in an Iceberg data lake, in which cost data comes from three major sources:
 - AWS Cost & Usage Report
 - AWS S3 Inventory
 - Splunk operational data

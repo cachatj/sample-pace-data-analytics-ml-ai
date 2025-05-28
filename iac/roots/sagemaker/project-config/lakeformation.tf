@@ -52,6 +52,31 @@ resource "aws_lakeformation_permissions" "billing_producer_default_catalog_icebe
   }
 }
 
+# resource "aws_cloudformation_stack" "lf_admin_append" {
+#   name = "${var.APP}-${var.ENV}-lf-admin-append"
+
+#   template_body = jsonencode({
+#     Resources = {
+#       DataLakeSettings = {
+#         Type = "AWS::LakeFormation::DataLakeSettings"
+#         Properties = {
+#           Admins = [
+#             {
+#               DataLakePrincipalIdentifier = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/Domain-Owner"
+#             },
+#             {
+#               DataLakePrincipalIdentifier = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/Project-Owner"
+#             }
+#           ]
+#           MutationType = "APPEND"
+#         }
+#       }
+#     }
+#   })
+
+#   capabilities = ["CAPABILITY_NAMED_IAM"]
+# }
+
 # resource "aws_lakeformation_permissions" "billing_producer_s3tables_catalog_database_permissions" {
 
 #   principal   = local.PRODUCER_ROLE
@@ -61,7 +86,7 @@ resource "aws_lakeformation_permissions" "billing_producer_default_catalog_icebe
 #     catalog_id = "${local.account_id}:s3tablescatalog/${var.APP}_${var.ENV}-billing"
 #     name = "${var.APP}"
 #   }
-# }
+#
 
 # resource "aws_lakeformation_permissions" "billing_producer_s3tables_catalog_table_permissions" {
 

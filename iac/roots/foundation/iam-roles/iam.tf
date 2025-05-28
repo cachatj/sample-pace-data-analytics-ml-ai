@@ -197,7 +197,10 @@ resource "aws_iam_role_policy" "glue_policy" {
         ]
         Condition = {
           StringEquals = {
-            "secretsmanager:ResourceTag/Usage" : "splunk"
+            "secretsmanager:ResourceTag/Usage" : [
+              "splunk",
+              "snowflake"
+            ]
           }
         }
       },

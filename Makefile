@@ -387,6 +387,8 @@ extract-producer-info:
 					$(if $(filter $(tooling),$(shell aws cloudformation describe-stacks --stack-name $(stack_name) --query "Stacks[0].Tags[?Key=='AmazonDataZoneBlueprint'].Value" --output text)),\
 						aws ssm --region $(AWS_PRIMARY_REGION) put-parameter --name /$(APP_NAME)/$(ENV_NAME)/sagemaker/producer/role --value ${shell aws cloudformation describe-stacks --stack-name $(stack_name) --query "Stacks[0].Outputs[?OutputKey=='UserRole'].OutputValue" --output text} --type "String" --overwrite;\
 						aws ssm --region $(AWS_PRIMARY_REGION) put-parameter --name /$(APP_NAME)/$(ENV_NAME)/sagemaker/producer/role-name --value ${shell aws cloudformation describe-stacks --stack-name $(stack_name) --query "Stacks[0].Outputs[?OutputKey=='UserRoleName'].OutputValue" --output text} --type "String" --overwrite;\
+						aws ssm --region $(AWS_PRIMARY_REGION) put-parameter --name /$(APP_NAME)/$(ENV_NAME)/sagemaker/producer/security-group --value ${shell aws cloudformation describe-stacks --stack-name $(stack_name) --query "Stacks[0].Outputs[?OutputKey=='SecurityGroup'].OutputValue" --output text} --type "String" --overwrite;\
+						aws ssm --region $(AWS_PRIMARY_REGION) put-parameter --name /$(APP_NAME)/$(ENV_NAME)/sagemaker/producer/tooling-env-id --value ${shell aws cloudformation describe-stacks --stack-name $(stack_name) --query "Stacks[0].Tags[?Key=='AmazonDataZoneEnvironment'].Value" --output text} --type "String" --overwrite;\
 						exit 0; \
 					)\
 				)\
@@ -482,6 +484,27 @@ destroy-athena:
 		terraform init; \
 		terraform destroy -auto-approve;)
 	@echo "Finished Destroying Athena"
+
+#################### Z-ETL Snowflake ####################
+
+deploy-z-etl-snowflake:
+	@echo "Deploying Z-ETL Snowflake Data"
+	(cd iac/roots/z-etl/snowflake; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Z-ETL Snowflake Data"
+
+destroy-z-etl-snowflake:
+	@echo "Destroying Z-ETL Snowflake Data"
+	(cd iac/roots/z-etl/snowflake; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying Z-ETL Snowflake Data"
+
+start-snowflake-job:
+	@echo "Starting Snowflake Data Ingestion Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-trading-data-generator)
+	@echo "Started Snowflake Data Ingestion Job"
 
 #################### Billing ####################
 
@@ -975,6 +998,63 @@ splunk-grant-consumer-s3tables-catalog-permissions:
     	--permissions ALL \
     	--region "$(AWS_PRIMARY_REGION)"
 	@echo "Finished Granting Consumer S3Tables Catalog Permissions"
+
+#################### SageMaker Unified Studio Lakehouse Snowflake Connection for Producer ####################
+
+deploy-snowflake-connection:
+	@echo "--- SageMaker Lakehouse Snowflake Connection Setup for Producer Project ---"
+	@echo "This will create a SageMaker Unified Studio Lakehouse data source connection to Snowflake."
+	@echo "VPC details (Subnet, AZ, Security Groups) and Athena spill bucket/prefix will be retrieved/derived automatically."
+	@echo "You will be prompted for Snowflake credentials (username/password) which will be stored in a new AWS Secrets Manager secret."
+	@echo "You will also be prompted for other Snowflake connection details."
+	@echo ""
+	@read -p "Enter Snowflake Connection Name you want to use [default: 'snowflake']: " SNOWFLAKE_CONNECTION_NAME; \
+	SNOWFLAKE_CONNECTION_NAME=$${SNOWFLAKE_CONNECTION_NAME:-'snowflake'}; \
+	read -p "Enter Snowflake Username: " SNOWFLAKE_USERNAME; \
+	if [ -z "$$SNOWFLAKE_USERNAME" ]; then echo "Snowflake Username cannot be empty."; exit 1; fi; \
+	read -sp "Enter Snowflake Password: " SNOWFLAKE_PASSWORD; echo; \
+	if [ -z "$$SNOWFLAKE_PASSWORD" ]; then echo "Snowflake Password cannot be empty."; exit 1; fi; \
+	read -p "Enter Snowflake Host (e.g., youraccount.snowflakecomputing.com): " SNOWFLAKE_HOST; \
+	if [ -z "$$SNOWFLAKE_HOST" ]; then echo "Snowflake Host cannot be empty."; exit 1; fi; \
+	read -p "Enter Snowflake Port [default: 443]: " SNOWFLAKE_PORT; \
+	SNOWFLAKE_PORT=$${SNOWFLAKE_PORT:-443}; \
+	read -p "Enter Snowflake Warehouse name: " SNOWFLAKE_WAREHOUSE; \
+	if [ -z "$$SNOWFLAKE_WAREHOUSE" ]; then echo "Snowflake Warehouse name cannot be empty."; exit 1; fi; \
+	read -p "Enter Snowflake Database name: " SNOWFLAKE_DATABASE; \
+	if [ -z "$$SNOWFLAKE_DATABASE" ]; then echo "Snowflake Database name cannot be empty."; exit 1; fi; \
+	read -p "Enter Snowflake Schema name: " SNOWFLAKE_SCHEMA; \
+	if [ -z "$$SNOWFLAKE_SCHEMA" ]; then echo "Snowflake Schema name cannot be empty."; exit 1; fi; \
+	echo ""; \
+	echo "Deploying SageMaker Lakehouse Snowflake Connection for Producer Project..."; \
+	export TF_VAR_AWS_ACCOUNT_ID="$(AWS_ACCOUNT_ID)"; \
+	export TF_VAR_SNOWFLAKE_CONNECTION_NAME="$$SNOWFLAKE_CONNECTION_NAME"; \
+	export TF_VAR_SNOWFLAKE_USERNAME="$$SNOWFLAKE_USERNAME"; \
+	export TF_VAR_SNOWFLAKE_PASSWORD="$$SNOWFLAKE_PASSWORD"; \
+	export TF_VAR_SNOWFLAKE_HOST="$$SNOWFLAKE_HOST"; \
+	export TF_VAR_SNOWFLAKE_PORT="$$SNOWFLAKE_PORT"; \
+	export TF_VAR_SNOWFLAKE_WAREHOUSE="$$SNOWFLAKE_WAREHOUSE"; \
+	export TF_VAR_SNOWFLAKE_DATABASE="$$SNOWFLAKE_DATABASE"; \
+	export TF_VAR_SNOWFLAKE_SCHEMA="$$SNOWFLAKE_SCHEMA"; \
+	(cd iac/roots/sagemaker/snowflake-connection; \
+		terraform init; \
+		terraform deploy -auto-approve;)
+	@echo "Finished deploying SageMaker Lakehouse Snowflake Connection."
+
+destroy-snowflake-connection:
+	@echo "Destroying SageMaker Lakehouse Snowflake Connection for Producer Project"
+	(cd iac/roots/sagemaker/snowflake-connection; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished destroying SageMaker Lakehouse Snowflake Connection"
+
+grant-lake-formation-snowflake-catalog:
+	@CATALOG_ID_SUFFIX=$$(aws ssm get-parameter --name "/${APP_NAME}/${ENV_NAME}/snowflake/connection-name" --query "Parameter.Value" --output text --region "${AWS_PRIMARY_REGION}"); \
+	aws lakeformation grant-permissions \
+		--principal DataLakePrincipalIdentifier="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ADMIN_ROLE}" \
+		--resource '{"Catalog": {"Id": "${AWS_ACCOUNT_ID}:'$${CATALOG_ID_SUFFIX}'"}}' \
+		--permissions ALL SUPER_USER \
+		--permissions-with-grant-option ALL \
+		--region "${AWS_PRIMARY_REGION}"
 
 #################### Datazone ####################
 
