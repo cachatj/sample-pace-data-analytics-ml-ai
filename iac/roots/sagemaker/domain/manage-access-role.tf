@@ -81,15 +81,16 @@ resource "aws_kms_key_policy" "smus_domain_manage_access_role_kms_policy" {
         Resource = "*"
       },
       {
+        Sid    = "Allow access for SageMaker Lakehouse Federated Query"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.smus_domain_manage_access_role.arn
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/SageMakerStudioQueryExecutionRole"
         }
         Action   = "kms:*"
         Resource = "*"
       },
       {
-        Sid    = "TO BE SCOPED DOWN - Allow access for SageMaker Lakehouse Federated Query"
+        Sid    = "Allow access for SageMaker Lakehouse Federated Query"
         Effect = "Allow"
         Principal = {
           AWS = "*"
