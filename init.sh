@@ -67,7 +67,7 @@ AWS_SECONDARY_REGION="$answer"
 
 TF_S3_BACKEND_NAME="${APP_NAME}-${ENV_NAME}-tf-back-end"
 
-envKeysString="APP_NAME AWS_ACCOUNT_ID AWS_DEFAULT_REGION ENV_NAME AWS_PRIMARY_REGION AWS_SECONDARY_REGION TF_S3_BACKEND_NAME"
+envKeysString="AWS_ACCOUNT_ID APP_NAME AWS_DEFAULT_REGION ENV_NAME AWS_PRIMARY_REGION AWS_SECONDARY_REGION TF_S3_BACKEND_NAME"
 ENV_KEYS=($(echo "$envKeysString"))
 templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/quicksight/dataset/terraform.tfvars
@@ -86,8 +86,6 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/foundation/iam-roles/backend.tf
 ./iac/roots/foundation/kms-keys/terraform.tfvars
 ./iac/roots/foundation/kms-keys/backend.tf
-./iac/roots/cicd/terraform.tfvars
-./iac/roots/cicd/backend.tf
 ./iac/roots/datazone/dz-project-prereq/terraform.tfvars
 ./iac/roots/datazone/dz-project-prereq/backend.tf
 ./iac/roots/datazone/dz-custom-project/terraform.tfvars
@@ -106,10 +104,18 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/datalakes/billing-cur/backend.tf
 ./iac/roots/datalakes/billing/terraform.tfvars
 ./iac/roots/datalakes/billing/backend.tf
+./iac/roots/z-etl/dynamodb/db-data-prereq/terraform.tfvars
+./iac/roots/z-etl/dynamodb/db-data-prereq/backend.tf
+./iac/roots/z-etl/dynamodb/z-etl-db/terraform.tfvars
+./iac/roots/z-etl/dynamodb/z-etl-db/backend.tf
+./iac/roots/z-etl/snowflake/terraform.tfvars
+./iac/roots/z-etl/snowflake/backend.tf
 ./iac/roots/sagemaker/consumer-project/terraform.tfvars
 ./iac/roots/sagemaker/consumer-project/backend.tf
 ./iac/roots/sagemaker/producer-project/terraform.tfvars
 ./iac/roots/sagemaker/producer-project/backend.tf
+./iac/roots/sagemaker/snowflake-connection/terraform.tfvars
+./iac/roots/sagemaker/snowflake-connection/backend.tf
 ./iac/roots/sagemaker/domain-prereq/terraform.tfvars
 ./iac/roots/sagemaker/domain-prereq/backend.tf
 ./iac/roots/sagemaker/project-config/terraform.tfvars
@@ -126,6 +132,7 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/bootstrap/parameters-secondary.json
 ./iac/bootstrap/parameters-crr.json
 ./review/checkov.txt
+./.git/index
 ./Makefile-4-customer"
 templateFilePaths=($(echo "$templateFilePathsStr"))
 
@@ -140,3 +147,5 @@ for templatePath in "${templateFilePaths[@]}"; do
         resolve_placeholders "$templatePath"
     fi
 done
+
+echo -e "\nSUCCESS!\n"

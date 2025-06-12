@@ -485,6 +485,53 @@ destroy-athena:
 		terraform destroy -auto-approve;)
 	@echo "Finished Destroying Athena"
 
+#################### Z-ETL Dynamodb #####################
+deploy-z-etl-dynamodb-data-prereq:
+	@echo "Deploying Z-ETL DynamoDB Pre-requisites"
+	(cd iac/roots/z-etl/dynamodb/db-data-prereq; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Z-ETL DynamoDB Pre-requisites"
+
+destroy-z-etl-dynamodb-data-prereq:
+	@echo "Emptying S3 buckets"
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-equity-orders-data-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-equity-orders-data-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-equity-orders-data-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-equity-orders-data-secondary-log" || true
+	@echo "Destroying Z-ETL DynamoDB Pre-requisites"
+	(cd iac/roots/z-etl/dynamodb/db-data-prereq; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying Z-ETL DynamoDB Pre-requisites"
+
+upload-z-etl-dynamodb-data:
+	@echo "Starting Upload of Z-ETL Data"
+	@TEMP_DIR=$$(mktemp -d) && \
+	gunzip -c data/z-etl/equity_orders.csv.gz > $$TEMP_DIR/equity_orders.csv && \
+	aws s3 cp $$TEMP_DIR/equity_orders.csv s3://$(APP_NAME)-$(ENV_NAME)-equity-orders-data-primary/etl/data/ --region $(AWS_PRIMARY_REGION) && \
+	rm -rf $$TEMP_DIR
+	@echo "Finished Upload of Z-ETL Data"
+
+deploy-z-etl-dynamodb:
+	@echo "Deploying Z-ETL DynamoDB"
+	(cd iac/roots/z-etl/dynamodb/z-etl-db; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Z-ETL DynamoDB"
+
+destroy-z-etl-dynamodb:
+	@echo "Emptying S3 buckets"
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "${APP_NAME}-${ENV_NAME}-zetl-ddb-primary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "${APP_NAME}-${ENV_NAME}-zetl-ddb-primary-log" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "${APP_NAME}-${ENV_NAME}-zetl-ddb-secondary" || true
+	$(ENV_PATH)../build-script/empty-s3.sh empty_s3_bucket_by_name "${APP_NAME}-${ENV_NAME}-zetl-ddb-secondary-log" || true
+	@echo "Destroying Z-ETL DynamoDB"
+	(cd iac/roots/z-etl/dynamodb/z-etl-db; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying Z-ETL DynamoDB"
+
 #################### Z-ETL Snowflake ####################
 
 deploy-z-etl-snowflake:
@@ -1148,7 +1195,7 @@ deploy-quicksight-dataset:
 #################### Deploy All ####################
 
 # Deploy all targets in the correct order, one make target at a time
-deploy-all: deploy-foundation deploy-idc deploy-domain deploy-projects deploy-glue-jars deploy-lake-formation deploy-athena deploy-billing-static deploy-billing-dynamic deploy-billing-cur deploy-inventory-static deploy-billing-dynamic deploy-splunk-modules deploy-project-configuration deploy-datazone deploy-quicksight-subscription deploy-quicksight deploy-billing-cur-modules
+deploy-all: deploy-foundation deploy-idc deploy-domain deploy-projects deploy-glue-jars deploy-lake-formation deploy-athena deploy-billing-static deploy-billing-dynamic deploy-billing-cur deploy-inventory-static deploy-billing-dynamic deploy-zetl-ddb deploy-splunk-modules deploy-project-configuration deploy-datazone deploy-quicksight-subscription deploy-quicksight deploy-billing-cur-modules
 deploy-foundation: deploy-kms-keys deploy-iam-roles deploy-buckets
 deploy-idc: deploy-idc-org
 deploy-domain: deploy-domain-prereq deploy-domain
@@ -1161,6 +1208,7 @@ deploy-billing-dynamic: upload-billing-dynamic-report-1 upload-billing-dynamic-r
 deploy-billing-cur: activate-cost-allocation-tags deploy-billing-cur 
 deploy-inventory-static: deploy-inventory grant-default-database-permissions drop-default-database start-inventory-hive-job start-inventory-iceberg-static-job start-inventory-s3table-create-job start-inventory-s3table-job grant-lake-formation-inventory-s3-table-catalog start-inventory-hive-data-quality-ruleset start-inventory-iceberg-data-quality-ruleset 
 deploy-inventory-dynamic: upload-inventory-dynamic-report-1 upload-inventory-dynamic-report-2 grant-lake-formation-inventory-iceberg-dynamic
+deploy-zetl-ddb: deploy-z-etl-dynamodb-data-prereq upload-z-etl-dynamodb-data deploy-z-etl-dynamodb
 deploy-splunk-modules: deploy-network deploy-splunk grant-default-database-permissions drop-default-database start-splunk-iceberg-static-job start-splunk-s3table-create-job start-splunk-s3table-job grant-lake-formation-splunk-s3-table-catalog
 deploy-project-configuration: deploy-project-config billing-grant-producer-s3tables-catalog-permissions inventory-grant-producer-s3tables-catalog-permissions splunk-grant-producer-s3tables-catalog-permissions 
 deploy-datazone: deploy-datazone-domain deploy-datazone-project-prereq deploy-datazone-producer-project deploy-datazone-consumer-project deploy-datazone-custom-project
@@ -1170,7 +1218,7 @@ deploy-quicksight: deploy-quicksight-dataset
 #################### Destroy All ####################
 
 # Destroy all targets in the correct order, one make target at a time
-destroy-all: destroy-datazone destroy-project-configuration destroy-splunk-modules destroy-inventory-modules destroy-billing-cur-modules destroy-billing-modules destroy-athena destroy-projects destroy-domain destroy-idc destroy-foundation
+destroy-all: destroy-datazone destroy-project-configuration destroy-splunk-modules destroy-zetl-ddb destroy-inventory-modules destroy-billing-cur-modules destroy-billing-modules destroy-athena destroy-projects destroy-domain destroy-idc destroy-foundation
 destroy-foundation: destroy-buckets destroy-iam-roles destroy-kms-keys
 destroy-idc: destroy-idc-org
 destroy-domain: destroy-domain destroy-domain-prereq
@@ -1179,6 +1227,7 @@ destroy-athena: destroy-athena
 destroy-billing-modules: destroy-billing
 destroy-billing-cur-modules: destroy-billing-cur
 destroy-inventory-modules: destroy-inventory
+destroy-zetl-ddb: destroy-z-etl-dynamodb destroy-z-etl-dynamodb-data-prereq
 destroy-splunk-modules: destroy-splunk
 destroy-project-configuration: destroy-project-config
 destroy-datazone: destroy-datazone-custom-project destroy-datazone-consumer-project  destroy-datazone-producer-project destroy-datazone-project-prereq destroy-datazone-domain

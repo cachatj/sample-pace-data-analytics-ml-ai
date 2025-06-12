@@ -144,16 +144,17 @@ You will need to deploy the following modules in order to deploy the whole solut
 | 11    | [Billing Data Lake - CUR (After 24 hours)](#11-billing-data-lake---cur)| 
 | 12    | [Inventory Data Lake - Static](#12-inventory-data-lake---static)      | 
 | 13    | [Inventory Data Lake - Dynamic](#13-inventory-data-lake---dynamic)    | 
-| 14    | [Splunk Data Lake](#14-splunk-datalake)                               | 
-| 15    | [Sagemaker Project Configuration](#15-sagemaker-project-configuration)| 
-| 16    | [Datazone Domain and Projects](#16-datazone-domain-and-projects)      | 
-| 17    | [Snowflake Connection](#17-snowflake-connection)                      |
-| 18    | [Snowflake ETL](#18-snowflake-etl)                                    |
-| 19    | [Quicksight Subscription](#19-quicksight-subscription)                | 
-| 20    | [Quicksight Visualization](#20-quicksight-visualization)              |
-| 21    | [Customer Data Lineage](#21-customer-data-lineage)                    |
-| 22    | [EMR Serverless with Jupyter Notebook](#22-emr-serverless-with-jupyter-notebook) |
-| 23    | [Clean Up Cache](#23-clean-up-cache)                                  |
+| 14    | [Splunk Data Lake](#14-splunk-datalake)                               |
+| 15    | [Dynamodb Zero ETL](#15-DynamoDB-Zero-ETL)                            |
+| 16    | [Sagemaker Project Configuration](#16-sagemaker-project-configuration)| 
+| 17    | [Datazone Domain and Projects](#17-datazone-domain-and-projects)      | 
+| 18    | [Snowflake Connection](#18-snowflake-connection)                      |
+| 19    | [Snowflake ETL](#19-snowflake-etl)                                    |
+| 20    | [Quicksight Subscription](#20-quicksight-subscription)                | 
+| 21    | [Quicksight Visualization](#21-quicksight-visualization)              |
+| 22    | [Customer Data Lineage](#22-customer-data-lineage)                    |
+| 23    | [EMR Serverless with Jupyter Notebook](#23-emr-serverless-with-jupyter-notebook) |
+| 24    | [Clean Up Cache](#24-clean-up-cache)                                  |
 ---
 
 ## Prep: Set up Admin Role in Makefile
@@ -587,7 +588,26 @@ make grant-lake-formation-splunk-s3-table-catalog
 | grant-lake-formation-splunk-s3-table-catalog | Grant Lake Formation permissions to Splunk S3 table catalog  |
 ---   
 
-## 15. **Sagemaker Project Configuration**
+## 15. **DynamoDB Zero ETL**
+
+This module configures zero etl integration between Amazon DynamoDb and Amazon SageMaker Lakehouse. DynamoDB zero integration eliminates the need to build custom data movement pipelines by automatically replicating DynamoDB data to Amazon Sagemaker Lakehouse.
+
+#### To deploy the module:
+
+```
+make deploy-z-etl-dynamodb-data-prereq 
+make upload-z-etl-dynamodb-data 
+make deploy-z-etl-dynamodb
+```
+
+| Target                                               | Result                                                                                                                  | Verification                  | 
+|-------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| deploy-z-etl-dynamodb-data-prereq                                 | Creats S3 bucket to store the data needed to populate DynamoDB                                                                                                    | Following S3 buckets are created: <br> 1. {app}-{env}-equity-orders-data-primary <br> 2. {app}-{env}-equity-orders-data-primary-log  <br> 3. {app}-{env}-equity-orders-data-secondary <br> 4. {app}-{env}-equity-orders-data-secondary-log <br>                 |
+| upload-z-etl-dynamodb-data                                 | Uploads equity orders data to s3 bucket                                                                                                    | Check for equity_orders.csv.zip file in {app}-{env}-equity-orders-data-primary bucket                  |
+| deploy-z-etl-dynamodb                                 | Uploads equity orders data to s3 bucket                                                                                                    | Verify that {app}-{env}-equity-orders-db-table dynamodb table is created with data populated <br> <br> Verify the following Glue database is created: {app}_{env}_equity_orders_zetl_ddb <br> <br> Verify the following zero etl integration is created and is in active state: {app}-{env}-ddb-glue-zetl-integration <br> <br> Verify the following Glue database table is created: {app}\_{env}_equity_orders_db_table (Wait for few mintues for the initial integration to complete)                  |
+
+
+## 16. **Sagemaker Project Configuration**
 
 This module configures the Sagemaker Producer and Consumer Projects to load the Data Lakes into Lakehouse by granting project roles lake house permissions to the data lakes. 
 
@@ -608,7 +628,7 @@ make splunk-grant-producer-s3tables-catalog-permissions
 | splunk-grant-producer-s3tables-catalog-permissions    | Grants Lake Formation access permissions to a project producer role for querying splunk data through S3 table catalog    | Verify that the project role is granted lake formation permissions  |    
 ---   
 
-## 16. **Datazone Domain and Projects**
+## 17. **Datazone Domain and Projects**
 
 This module deploys datazone domain and datazone project. 
 
@@ -628,7 +648,7 @@ make deploy-datazone-custom-project
 | deploy-datazone-project-prereq  | Deploy Datazone Project Prerequisites | Verify that Datazone project prerequisites are created **producer_project**, **consumer_project** and **custom_project** are created in the Datazone domain **Exchange**  | deploy-datazone-procuder-project  | Deploy Datazone Producer Project | Verify that Datazone **Producer** project is created in the Datazone domain **Exchange**  | deploy-datazone-consumer-project  | Deploy Datazone Consumer Project | Verify that Datazone **Consumer** project is created in the Datazone domain **Exchange**  | deploy-datazone-custom-project  | Deploy Datazone Consumer Project | Verify that Datazone **Custom** project is created in the Datazone domain **Exchange**  | 
 ---
 
-## 17. **Snowflake Connection**
+## 18. **Snowflake Connection**
 
 This module deploys a Snowflake connection for SageMaker Lakehouse, enabling data access between SageMaker Studio UI and Snowflake.
 
@@ -638,8 +658,8 @@ Before deploying this module, you need:
 
 1. A Snowflake account with appropriate access credentials
 2. Snowflake objects (database, warehouse, table, schema) must be created and accessible. For detailed instructions on creating and setting up free trial Snowflake for use with SageMaker, refer to [Amazon SageMaker with Snowflake as datasource](https://github.com/aws-samples/amazon-sagemaker-w-snowflake-as-datasource/blob/main/snowflake-instructions.md).
-3. > [!IMPORTANT]
-   > All Snowflake object names (database, schema, table, columns names, warehouse name) must be in lowercase due to current limitations in Athena's Snowflake connector.
+> [!IMPORTANT]
+> All Snowflake object names (database, schema, table, columns names, warehouse name) must be in lowercase due to current limitations in Athena's Snowflake connector.
 
 For information about Athena-Snowflake connector limitations, see [AWS documentation](https://docs.aws.amazon.com/athena/latest/ug/connectors-snowflake.html#connectors-snowflake-limitations).
 
@@ -738,14 +758,14 @@ After successful deployment, you should verify that the Snowflake connection is 
 7. You can now use this connection to query Snowflake data directly from SageMaker notebooks and DataZone projects
 ---
 
-## 18. **Snowflake ETL**
+## 19. **Snowflake ETL**
 
 This module creates a Glue job that generates synthetic trading data and loads it into Snowflake.
 
 #### Prerequisites
 
 > [!CAUTION]
-> Module 17 (Snowflake Connection) must be deployed successfully before proceeding with this module.
+> Module 18 (Snowflake Connection) must be deployed successfully before proceeding with this module.
 
 #### To deploy the module:
 
@@ -771,7 +791,7 @@ After successful deployment, you should verify that the trading data was success
 - You should see the "trading_orders" table available inside the Snowflake connection you created in the previous step
 ---
 
-## 19. **Quicksight Subscription**
+## 20. **Quicksight Subscription**
 
 This module deploys subscription for quicksight.
 
@@ -794,7 +814,7 @@ Currently (as of March 2025), there is a known limitation when creating a QuickS
 
 
 
-## 19. **Quicksight Visualization**
+## 21. **Quicksight Visualization**
 
 This module deploys datasource, datasets and dashboard visualization for quicksight. 
 
@@ -830,7 +850,7 @@ make deploy-quicksight-dataset
 | deploy-quicksight-dataset | Deploy QuickSight dataset and reports | Verify that you see a {app}_{env}_Billing_Dashboard populated with data  |
 ---
 
-## 20. **Custom Data Lineage**
+## 22. **Custom Data Lineage**
 
 This module helps users create custom assets and publish custom lineage to Sagemaker Catalog. 
 
@@ -871,7 +891,7 @@ Verify custom assets and custom lineage:
 7. Click on "3 columns" drop down in "Trade" asset to expand the columns
 8. You should see column level lineage between "Order" and "Trade" assets 
 
-## 21. **EMR Serverless with Jupyter Notebook**
+## 23. **EMR Serverless with Jupyter Notebook**
 
 This module helps users create a Jupyter Notebook and execute a Spark query against Lakehouse using EMR Serverless. 
 
@@ -900,7 +920,7 @@ spark.sql('SELECT * FROM daivi_dev1_billing.daivi_dev1_billing_hive limit 10;')
 11. Execute the notebook
 12. Please wait for the Spark engine to start and exeucte the query and display the results
 
-## 22. **Clean Up Cache**
+## 24. **Clean Up Cache**
 
 This module helps users clean up Terraform cache from local machine. Please run the following make command to clean up local cache. 
 
