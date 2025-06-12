@@ -6,7 +6,7 @@ terraform {
   backend "s3" {
 
     bucket         = "###TF_S3_BACKEND_NAME###-###AWS_ACCOUNT_ID###-###AWS_DEFAULT_REGION###"
-    key            = "###ENV_NAME###/domain-prereq/terraform.tfstate"
+    key            = "###ENV_NAME###/sagemaker/domain-prereq/terraform.tfstate"
     dynamodb_table = "###TF_S3_BACKEND_NAME###-lock"
     region         = "###AWS_PRIMARY_REGION###" 
     encrypt        = true

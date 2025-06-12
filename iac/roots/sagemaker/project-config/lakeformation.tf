@@ -418,4 +418,27 @@ resource "aws_lakeformation_permissions" "splunk_producer_default_catalog_iceber
 #   }
 # }
 
+resource "aws_lakeformation_permissions" "zetl_ddb_default_catalog_database_permissions" {
 
+  principal   = local.PRODUCER_ROLE
+  permissions = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["DESCRIBE", "CREATE_TABLE", "ALTER", "DROP"]
+
+  database {
+    catalog_id = local.account_id
+    name = "${var.APP}_${var.ENV}_equity_orders_zetl_ddb"
+  }
+}
+
+resource "aws_lakeformation_permissions" "zetl_ddb_default_catalog_table_permissions" {
+
+  principal   = local.PRODUCER_ROLE
+  permissions = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "DESCRIBE", "ALTER", "DROP"]
+
+  table {
+    catalog_id    = local.account_id
+    database_name = "${var.APP}_${var.ENV}_equity_orders_zetl_ddb"
+    name          = "${var.APP}_${var.ENV}_equity_orders_db_table"
+  }
+}

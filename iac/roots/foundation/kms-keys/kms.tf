@@ -310,6 +310,14 @@ resource "aws_kms_key" "glue_primary_key" {
       },
       "Action": "kms:*",
       "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "glue.amazonaws.com"
+      },
+      "Action": "kms:*",
+      "Resource": "*"
     }
   ]
 }
@@ -823,4 +831,56 @@ resource "aws_kms_alias" "ebs_secondary_key_alias" {
 
   name          = "alias/${var.APP}-${var.ENV}-ebs-secret-key"
   target_key_id = aws_kms_key.ebs_secondary_key.key_id
+}
+
+// Dynamodb
+
+resource "aws_kms_key" "dynamodb_primary_key" {
+
+  provider            = aws.primary
+
+  enable_key_rotation = true
+  description         = "${var.APP}-${var.ENV}-dynamodb-secret-key"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "key-default-1",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::${local.account_id}:root"
+      },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "Enable Glue to Decrypt key",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "glue.amazonaws.com"
+      },
+      "Action": "kms:Decrypt",
+      "Resource": "*"
+    }
+  ]
+}
+POLICY
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+    Usage       = "dynamodb"
+    Name        = "${var.APP}-${var.ENV}-dynamodb-secret-key"
+  }
+}
+
+resource "aws_kms_alias" "dynamodb_primary_key_alias" {
+
+  provider      = aws.primary
+
+  name          = "alias/${var.APP}-${var.ENV}-dynamodb-secret-key"
+  target_key_id = aws_kms_key.dynamodb_primary_key.id
 }
