@@ -9,7 +9,7 @@ resource "aws_vpc_endpoint" "s3" {
   route_table_ids   = aws_route_table.private.*.id
 
   tags = {
-    Name        = "sagemaker-unified-studio-s3-endpoint"
+    Name        = "${var.APP}-${var.ENV}-s3-endpoint"
     Application = var.APP
     Environment = var.ENV
   }

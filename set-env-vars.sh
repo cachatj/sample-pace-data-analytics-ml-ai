@@ -1,5 +1,5 @@
-export APP_NAME="###APP_NAME###"
 export AWS_ACCOUNT_ID="###AWS_ACCOUNT_ID###"
+export APP_NAME="###APP_NAME###"
 export AWS_DEFAULT_REGION="###AWS_DEFAULT_REGION###"
 export ENV_NAME="###ENV_NAME###"
 export AWS_PRIMARY_REGION="###AWS_PRIMARY_REGION###"

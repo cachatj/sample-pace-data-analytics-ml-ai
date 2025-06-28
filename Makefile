@@ -114,6 +114,38 @@ destroy-buckets:
 		terraform destroy -auto-approve;)
 		@echo "Finished Destroying Data Bucket"
 
+#################### VPC ############################
+
+deploy-vpc:
+	@echo "Deploying VPC"
+	(cd iac/roots/foundation/vpc; \
+		terraform init; \
+		terraform apply -auto-approve;)
+		@echo "Finished Deploying VPC"
+
+destroy-vpc:
+	@echo "Destorying VPC"
+	(cd iac/roots/foundation/vpc; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+		@echo "Finished Destroying VPC"
+
+#################### MSK ############################
+
+deploy-msk:
+	@echo "Deploying MSK cluster"
+	(cd iac/roots/foundation/msk-serverless; \
+		terraform init; \
+		terraform apply -auto-approve;)
+		@echo "Finished Deploying MSK Cluster"
+
+destroy-msk:
+	@echo "Destorying MSK Cluster"
+	(cd iac/roots/foundation/msk-serverless; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+		@echo "Finished Destroying MSK Cluster"
+
 #################### Identity Center ####################
 
 deploy-idc-org:
@@ -134,15 +166,35 @@ deploy-idc-acc:
 	@echo "Deploying Account-Level Identity Center"
 	(cd iac/roots/idc/idc-acc; \
 		terraform init; \
-		terraform apply -auto-approve;)
+		terraform apply -var ADMIN_ROLE="$(ADMIN_ROLE)" -auto-approve;)
 		@echo "Finished Deploying Account-Level Identity Center"
 
 destroy-idc-acc:
 	@echo "Destroying Account-Level Identity Center"
 	(cd iac/roots/idc/idc-acc; \
 		terraform init; \
-		terraform destroy -auto-approve;)
+		terraform destroy -var ADMIN_ROLE="$(ADMIN_ROLE)" -auto-approve;)
 		@echo "Finished Destroying Account-Level Identity Center"
+
+disable-mfa:
+	@echo "Disable MFA of IAM Identity Center"
+	@echo "Building Lambda layer for MFA disabler"
+	chmod +x iac/roots/idc/disable-mfa/build_layer.sh
+	iac/roots/idc/disable-mfa/build_layer.sh
+	@echo "Finished building Lambda layer"
+	(cd iac/roots/idc/disable-mfa; \
+		terraform init; \
+		terraform apply -auto-approve;)
+		@echo "Finished Deploying Identity Center"
+
+clean-mfa-components:
+	@echo "Destroying Bucket, Layer, and Roles creation of MFA Disable"
+	(cd iac/roots/idc/disable-mfa; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+		@echo "Finished cleanup"
+
+
 
 deploy-dyo-idc:
 	@echo "Creating SSM parameter with IAM Identity Center user mappings"
@@ -422,10 +474,10 @@ deploy-glue-jars:
 	mkdir -p jars
 	export DYNAMIC_RESOLUTION=y; \
 
-	curl -o jars/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar \
-		"https://repo1.maven.org/maven2/software/amazon/s3tables/s3-tables-catalog-for-iceberg-runtime/0.1.5/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+	curl -o jars/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar \
+		"https://repo1.maven.org/maven2/software/amazon/s3tables/s3-tables-catalog-for-iceberg-runtime/0.1.7/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
 	
-	aws s3 cp "jars/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar" \
+	aws s3 cp "jars/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar" \
 		"s3://$(APP_NAME)-$(ENV_NAME)-glue-jars-primary/" \
 		--region "$(AWS_PRIMARY_REGION)"
 	
@@ -878,21 +930,6 @@ grant-lake-formation-inventory-iceberg-dynamic:
         --permissions-with-grant-option ALL \
         --region "$(AWS_PRIMARY_REGION)"
 
-#################### Network ####################
-
-deploy-network:
-	@echo "Deploying Network"
-	(cd iac/roots/network; \
-		terraform init; \
-		terraform apply -auto-approve;)
-	@echo "Finished Deploying Network"
-
-destroy-network:
-	@echo "Destroying Network"
-	(cd iac/roots/network; \
-		terraform init; \
-		terraform destroy -auto-approve;)
-	@echo "Finished Destroying Network"
 
 #################### Splunk ####################
 
@@ -963,6 +1000,163 @@ register-splunk-iceberg-s3bucket-with-lake-formation:
         --with-federation \
         --region "${AWS_PRIMARY_REGION}"
 
+
+###################### PRICE #################################
+
+deploy-price:
+	@echo "Deploying Price Infrastructure"
+	(cd iac/roots/datalakes/price; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Price Infrastructure"
+
+destroy-price:
+	@echo "Emptying and deleting S3 Table"
+	aws s3tables delete-table \
+    	--table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-price \
+    	--namespace $(APP_NAME) --name price || true
+
+	aws s3tables delete-namespace \
+    	--table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-price \
+        --namespace $(APP_NAME) || true
+
+	aws s3tables delete-table-bucket \
+        --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-price || true
+
+	@echo "Emptying S3 buckets"
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-data-primary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-data-secondary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-data-primary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-data-secondary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-hive-primary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-hive-secondary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-hive-primary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-hive-secondary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-iceberg-primary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-iceberg-secondary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-iceberg-primary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-price-iceberg-secondary-log" || true
+
+	@echo "Destroying Price Infrastructure"
+	(cd iac/roots/datalakes/price; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished DepDestroyingloying Price Infrastructure"
+
+start-price-hive-job:
+	@echo "Starting Price Hive Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-price-hive)
+	@echo "Started Price Hive Job"
+
+start-price-iceberg-job:
+	@echo "Starting Price Iceberg Static Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-price-iceberg)
+	@echo "Started Price Iceberg Static Job"
+
+start-price-s3table-create-job:
+	@echo "Starting Price S3 Table Create Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-price-s3table-create)
+	@echo "Started Price S3 Table Create Job"
+
+start-price-s3table-delete-job:
+	@echo "Starting Price S3 Table Delete Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-price-s3table-delete)
+	@echo "Started Price S3 Table Delete Job"
+
+start-price-s3table-job:
+	@echo "Starting Price S3 Table Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-price-s3table;)
+	@echo "Started Price S3 Table Job"
+
+grant-lake-formation-price-s3-table-catalog:
+	aws lakeformation grant-permissions \
+		--principal DataLakePrincipalIdentifier="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ADMIN_ROLE}" \
+		--resource "{\"Table\": {\"CatalogId\": \"${AWS_ACCOUNT_ID}:s3tablescatalog/${APP_NAME}-${ENV_NAME}-price\", \"DatabaseName\": \"${APP_NAME}\", \"Name\": \"price\"}}" \
+		--permissions ALL \
+		--permissions-with-grant-option ALL \
+		--region "$(AWS_PRIMARY_REGION)"
+
+start-price-hive-data-quality-ruleset:
+	@echo "Starting Price Hive Data Quality Ruleset"
+	aws glue start-data-quality-ruleset-evaluation-run \
+		--region $(AWS_PRIMARY_REGION) \
+		--role "$(APP_NAME)-$(ENV_NAME)-glue-role"  \
+		--ruleset-names "price_hive_ruleset" \
+		--data-source '{"GlueTable":{"DatabaseName":"$(APP_NAME)_$(ENV_NAME)_price","TableName":"$(APP_NAME)_$(ENV_NAME)_price_hive"}}'
+	@echo "Started Price Hive Data Quality Ruleset"
+
+######################## TRADE ################################
+
+deploy-trade:
+	@echo "Deploying Trade Infrastructure"
+	(cd iac/roots/datalakes/trade; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Trade Infrastructure"
+
+destroy-trade:
+	@echo "Emptying and deleting S3 Table"
+	aws s3tables delete-table \
+    	--table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-trade \
+    	--namespace $(APP_NAME) --name trade || true
+
+	aws s3tables delete-namespace \
+    	--table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-trade \
+        --namespace $(APP_NAME) || true
+
+	aws s3tables delete-table-bucket \
+        --table-bucket-arn arn:aws:s3tables:$(AWS_PRIMARY_REGION):$(AWS_ACCOUNT_ID):bucket/$(APP_NAME)-$(ENV_NAME)-trade || true
+
+	@echo "Emptying S3 buckets"
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-hive-primary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-hive-secondary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-hive-primary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-hive-secondary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-iceberg-primary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-iceberg-secondary" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-iceberg-primary-log" || true
+	build-script/empty-s3.sh empty_s3_bucket_by_name "$(APP_NAME)-$(ENV_NAME)-trade-iceberg-secondary-log" || true
+	@echo "Destroying Trade Infrastructure"
+	(cd iac/roots/datalakes/trade; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying Trade Infrastructure"
+
+start-trade-job:
+	@echo "Starting Trade Job"
+	(aws glue start-job-run --region $(AWS_PRIMARY_REGION) --job-name $(APP_NAME)-$(ENV_NAME)-trade-job;)
+	@echo "Started Trade Job"
+
+run-test-harness-trade:
+	@echo "Starting Test Harness Lambda"
+	(aws lambda invoke --region $(AWS_PRIMARY_REGION) --function-name $(APP_NAME)-$(ENV_NAME)-msk-producer-lambda --payload '{"body" : "{\"topic\" : \"trade-topic\", \"duration\" : 1}"}' response.json --cli-binary-format raw-in-base64-out --cli-read-timeout 900;)
+	@echo "Finished Starting Test Harness Lambda"
+
+###################### STOCKS ##############################
+
+build-flink-app:
+	cd iac/roots/datalakes/stocks/java-app/msf && \
+	mvn clean package
+
+deploy-stocks:
+	@echo "Deploying Stocks Infrastructure"
+	(cd iac/roots/datalakes/stocks; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying Stocks Infrastructure"
+
+destroy-stocks:
+	@echo "Destroying Stocks Infrastructure"
+	(cd iac/roots/datalakes/stocks; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying Stocks Infrastructure"
+
+run-test-harness-stock:
+	@echo "Starting Test Harness Lambda"
+	(aws lambda invoke --region $(AWS_PRIMARY_REGION) --function-name $(APP_NAME)-$(ENV_NAME)-msk-producer-lambda --payload '{"body" : "{\"duration\" : 1}"}' response.json --cli-binary-format raw-in-base64-out --cli-read-timeout 900;)
+	@echo "Finished Starting Test Harness Lambda"
+	
 #################### Project Configuration ####################
 
 deploy-project-config:
@@ -1084,7 +1278,7 @@ deploy-snowflake-connection:
 	export TF_VAR_SNOWFLAKE_SCHEMA="$$SNOWFLAKE_SCHEMA"; \
 	(cd iac/roots/sagemaker/snowflake-connection; \
 		terraform init; \
-		terraform deploy -auto-approve;)
+		terraform apply -auto-approve;)
 	@echo "Finished deploying SageMaker Lakehouse Snowflake Connection."
 
 destroy-snowflake-connection:
@@ -1102,6 +1296,63 @@ grant-lake-formation-snowflake-catalog:
 		--permissions ALL SUPER_USER \
 		--permissions-with-grant-option ALL \
 		--region "${AWS_PRIMARY_REGION}"
+
+# Updates the KMS key policy for the Glue secret key to allow SageMaker Lakehouse Federated Query access.
+# This is necessary to enable SageMaker Lakehouse to perform federated queries against encrypted data sources.
+# The target adds a policy statement that grants the SageMakerStudioQueryExecutionRole permission to use the KMS key.
+# This target should be executed after deploying the Snowflake connection and before using SageMaker Lakehouse federated queries.
+update-kms-policy-for-lakehouse:
+	@echo "Updating KMS policy for SageMaker Lakehouse Federated Query"
+	@if [ -z "$(APP_NAME)" ] || [ -z "$(ENV_NAME)" ] || [ -z "$(AWS_ACCOUNT_ID)" ]; then \
+		echo "Error: Required environment variables APP_NAME, ENV_NAME, or AWS_ACCOUNT_ID are not set"; \
+		echo "Please ensure these variables are set before running this target"; \
+		exit 1; \
+	fi; \
+	KMS_ALIAS="$(APP_NAME)-$(ENV_NAME)-glue-secret-key"; \
+	echo "Looking for KMS key with alias: $$KMS_ALIAS"; \
+	KMS_KEY_ID=$$(aws kms describe-key --key-id alias/$$KMS_ALIAS --query 'KeyMetadata.KeyId' --output text 2>/dev/null); \
+	if [ -z "$$KMS_KEY_ID" ] || [ "$$KMS_KEY_ID" = "None" ]; then \
+		echo "Error: KMS key with alias '$$KMS_ALIAS' not found"; \
+		echo "Please ensure the KMS key exists and you have permission to access it"; \
+		exit 1; \
+	fi; \
+	echo "Found KMS key with ID: $$KMS_KEY_ID"; \
+	echo "Retrieving current KMS key policy..."; \
+	CURRENT_POLICY=$$(aws kms get-key-policy --key-id $$KMS_KEY_ID --policy-name default --query Policy --output text 2>/dev/null); \
+	if [ -z "$$CURRENT_POLICY" ]; then \
+		echo "Error: Failed to retrieve current policy for KMS key"; \
+		echo "Please ensure you have permission to read the key policy"; \
+		exit 1; \
+	fi; \
+	echo "Successfully retrieved current KMS key policy"; \
+	echo "Checking if policy already contains SageMaker Lakehouse Federated Query statement..."; \
+	if echo "$$CURRENT_POLICY" | jq -e '.Statement[] | select(.Sid == "Allow access for SageMaker Lakehouse Federated Query")' > /dev/null; then \
+		echo "Policy already contains the required statement for SageMaker Lakehouse Federated Query"; \
+		echo "No changes needed"; \
+		exit 0; \
+	fi; \
+	echo "Adding SageMaker Lakehouse Federated Query statement to policy..."; \
+	NEW_STATEMENT='{"Sid": "Allow access for SageMaker Lakehouse Federated Query", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::$(AWS_ACCOUNT_ID):role/SageMakerStudioQueryExecutionRole"}, "Action": "kms:*", "Resource": "*"}'; \
+	MODIFIED_POLICY=$$(echo "$$CURRENT_POLICY" | jq --arg new_statement "$$NEW_STATEMENT" '.Statement += [$$new_statement | fromjson]'); \
+	if [ -z "$$MODIFIED_POLICY" ] || [ "$$MODIFIED_POLICY" = "null" ]; then \
+		echo "Error: Failed to modify KMS key policy"; \
+		echo "Please check that the current policy is valid JSON"; \
+		exit 1; \
+	fi; \
+	echo "Successfully modified KMS key policy"; \
+	echo "Updating KMS key policy..."; \
+	TEMP_POLICY_FILE=$$(mktemp); \
+	echo "$$MODIFIED_POLICY" > $$TEMP_POLICY_FILE; \
+	aws kms put-key-policy --key-id $$KMS_KEY_ID --policy-name default --policy file://$$TEMP_POLICY_FILE 2>/dev/null; \
+	UPDATE_RESULT=$$?; \
+	rm -f $$TEMP_POLICY_FILE; \
+	if [ $$UPDATE_RESULT -ne 0 ]; then \
+		echo "Error: Failed to update KMS key policy"; \
+		echo "Please ensure you have permission to update the key policy"; \
+		exit 1; \
+	fi; \
+	echo "✅ Successfully updated KMS key policy for SageMaker Lakehouse Federated Query"; \
+	echo "The SageMaker Studio Query Execution Role now has access to the KMS key"
 
 #################### Datazone ####################
 
@@ -1194,6 +1445,25 @@ deploy-quicksight-dataset:
 
 #################### Deploy All ####################
 
+deploy-data-pipeline:
+	@echo "Deploying data-pipeline module"
+	@(\
+	  cd iac/roots/data-pipeline; \
+	  terraform init; \
+	  terraform apply -auto-approve; \
+	)
+	@echo "Finished deploying data-pipeline module"
+
+destroy-data-pipeline:
+	@echo "Destroying data-pipeline module"
+	@(\
+	  cd iac/roots/data-pipeline; \
+	  terraform init; \
+	  terraform destroy -auto-approve; \
+	)
+	@echo "Finished destroying data-pipeline module"
+
+
 # Deploy all targets in the correct order, one make target at a time
 deploy-all: deploy-foundation deploy-idc deploy-domain deploy-projects deploy-glue-jars deploy-lake-formation deploy-athena deploy-billing-static deploy-billing-dynamic deploy-billing-cur deploy-inventory-static deploy-billing-dynamic deploy-zetl-ddb deploy-splunk-modules deploy-project-configuration deploy-datazone deploy-quicksight-subscription deploy-quicksight deploy-billing-cur-modules
 deploy-foundation: deploy-kms-keys deploy-iam-roles deploy-buckets
@@ -1212,6 +1482,8 @@ deploy-zetl-ddb: deploy-z-etl-dynamodb-data-prereq upload-z-etl-dynamodb-data de
 deploy-splunk-modules: deploy-network deploy-splunk grant-default-database-permissions drop-default-database start-splunk-iceberg-static-job start-splunk-s3table-create-job start-splunk-s3table-job grant-lake-formation-splunk-s3-table-catalog
 deploy-project-configuration: deploy-project-config billing-grant-producer-s3tables-catalog-permissions inventory-grant-producer-s3tables-catalog-permissions splunk-grant-producer-s3tables-catalog-permissions 
 deploy-datazone: deploy-datazone-domain deploy-datazone-project-prereq deploy-datazone-producer-project deploy-datazone-consumer-project deploy-datazone-custom-project
+deploy-smus-snowflake-connection: deploy-snowflake-connection grant-lake-formation-snowflake-catalog update-kms-policy-for-lakehouse
+deploy-snowflake-zero-etl: deploy-z-etl-snowflake start-snowflake-job 
 deploy-quicksight-subscription: deploy-quicksight-subscription
 deploy-quicksight: deploy-quicksight-dataset
 
@@ -1231,3 +1503,4 @@ destroy-zetl-ddb: destroy-z-etl-dynamodb destroy-z-etl-dynamodb-data-prereq
 destroy-splunk-modules: destroy-splunk
 destroy-project-configuration: destroy-project-config
 destroy-datazone: destroy-datazone-custom-project destroy-datazone-consumer-project  destroy-datazone-producer-project destroy-datazone-project-prereq destroy-datazone-domain
+destroy-smus-snowflake-connection: destroy-snowflake-connection

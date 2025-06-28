@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 # This script has functions to empty S3 buckets for the application, even if they contain versioned files
 # Example usage:

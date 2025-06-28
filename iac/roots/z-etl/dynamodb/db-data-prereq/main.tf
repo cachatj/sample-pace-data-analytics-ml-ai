@@ -33,3 +33,9 @@ module "z_etl_db_data_bucket" {
   ENV                          = var.ENV
   USAGE                        = "zetl-ddb"
 }
+
+resource "aws_s3_object" "equtiy_orders_data" {
+  bucket = module.z_etl_db_data_bucket.primary_bucket_id
+  key = "equity_orders.csv.gz"
+  source = "${path.module}/../../../../../data/equity_orders/equity_orders.csv.gz"
+}

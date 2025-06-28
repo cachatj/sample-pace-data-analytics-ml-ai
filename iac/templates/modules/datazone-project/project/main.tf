@@ -6,7 +6,7 @@ resource "awscc_datazone_project" "project" {
   domain_identifier   = var.domain_id
   name                = var.project_name
   description = try(var.project_description)
-  glossary_terms = try(var.glossary_terms)
+  #glossary_terms = try(var.glossary_terms)
 }
 
 /*
