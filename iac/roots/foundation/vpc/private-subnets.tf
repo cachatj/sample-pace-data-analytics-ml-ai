@@ -9,11 +9,10 @@ resource "aws_subnet" "private" {
   # Following the CIDR scheme provisioned by the console namely, 10.38.192.0/21, 10.38.200.0/21, 10.28.208.0/21, and 10.38.216.0/21
   cidr_block        = "10.38.${count.index * 8 + 192}.0/21"
   availability_zone = data.aws_availability_zones.available.names[count.index]
-
   tags = {
-    Name = "sagemaker-unified-studio-private-subnet-${count.index + 1}"
-    CreatedForUseWithSageMakerUnifiedStudio = true
-    for-use-with-amazon-emr-managed-policies = true      
+    Name = "${var.APP}-${var.ENV}-private-subnet-${count.index + 1}"
+    Application = var.APP
+    Environment = var.ENV
   }
 }
 
@@ -23,7 +22,9 @@ resource "aws_eip" "nat" {
   domain = "vpc"
 
   tags = {
-    Name = "sagemaker-unified-studio-nat-eip"
+    Name = "${var.APP}-${var.ENV}-nat-eip"
+    Application = var.APP
+    Environment = var.ENV
   }
 }
 
@@ -31,10 +32,12 @@ resource "aws_eip" "nat" {
 resource "aws_nat_gateway" "main" {
 
   allocation_id = aws_eip.nat.allocation_id
-  subnet_id     = aws_subnet.public.id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = {
-    Name = "sagemaker-unified-studio-nat-gateway"
+    Name = "${var.APP}-${var.ENV}-nat-gateway"
+    Application = var.APP
+    Environment = var.ENV
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -51,7 +54,9 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name = "sagemaker-unified-studio-private-rt"
+    Name = "${var.APP}-${var.ENV}-private-rt"
+    Application = var.APP
+    Environment = var.ENV
   }
 }
 
@@ -66,7 +71,7 @@ resource "aws_route_table_association" "private" {
 # Save the Subnet Ids in SSM Parameter Store
 resource "aws_ssm_parameter" "private_subnet_ids" {
 
-  name  = "/${var.APP}/${var.ENV}/smus_domain_private_subnet_ids"
+  name  = "/${var.APP}/${var.ENV}/vpc_private_subnet_ids"
   type  = "SecureString"
   value = join(",", aws_subnet.private[*].id)
   key_id = data.aws_kms_key.ssm_kms_key.key_id
@@ -74,14 +79,12 @@ resource "aws_ssm_parameter" "private_subnet_ids" {
   tags = {
     Application = var.APP
     Environment = var.ENV
-    Usage = "SMUS Domain Pre-req"
   }
 }
 
-# Save the AZ names in SSM Parameter Store
 resource "aws_ssm_parameter" "availability_zone_names" {
   
-  name  = "/${var.APP}/${var.ENV}/smus_domain_availability_zone_names"
+  name  = "/${var.APP}/${var.ENV}/vpc_availability_zone_names"
   type  = "SecureString"
   value = join(",", aws_subnet.private[*].availability_zone)
   key_id = data.aws_kms_key.ssm_kms_key.key_id
@@ -89,6 +92,5 @@ resource "aws_ssm_parameter" "availability_zone_names" {
   tags = {
     Application = var.APP
     Environment = var.ENV
-    Usage = "SMUS Domain Pre-req"
   }
 }

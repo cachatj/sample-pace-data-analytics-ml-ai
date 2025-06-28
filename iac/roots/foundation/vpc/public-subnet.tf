@@ -8,16 +8,15 @@ locals {
 # Public subnet
 resource "aws_subnet" "public" {
 
+  count             = local.max_az_count
   vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.38.224.0/21"
-  availability_zone = local.az_name
+  cidr_block        = "10.38.${count.index * 8 + 224}.0/21"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 
   map_public_ip_on_launch = true
 
   tags = {
-    Name                                     = "sagemaker-unified-studio-public-subnet"
-    CreatedForUseWithSageMakerUnifiedStudio  = true
-    for-use-with-amazon-emr-managed-policies = true
+    Name                                     = "${var.APP}-${var.ENV}-public-subnet-${count.index + 1}"
     Application                              = var.APP
     Environment                              = var.ENV
   }
@@ -30,7 +29,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name        = "sagemaker-unified-studio-igw"
+    Name        = "${var.APP}-${var.ENV}-igw"
     Application = var.APP
     Environment = var.ENV
   }
@@ -47,7 +46,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name        = "sagemaker-unified-studio-public-rt"
+    Name        = "${var.APP}-${var.ENV}-public-rt"
     Application = var.APP
     Environment = var.ENV
   }
@@ -56,7 +55,21 @@ resource "aws_route_table" "public" {
 # Associate public subnet with public route table
 resource "aws_route_table_association" "public" {
 
-  subnet_id      = aws_subnet.public.id
+  count          = local.max_az_count
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
   
+}
+
+resource "aws_ssm_parameter" "public_subnet_ids" {
+
+  name  = "/${var.APP}/${var.ENV}/vpc_public_subnet_ids"
+  type  = "SecureString"
+  value = join(",", aws_subnet.public[*].id)
+  key_id = data.aws_kms_key.ssm_kms_key.key_id
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+  }
 }

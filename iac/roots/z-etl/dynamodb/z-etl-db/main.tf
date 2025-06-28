@@ -65,7 +65,7 @@ module "dynamodb_table" {
   # Import configuration
   enable_import             = true
   import_format             = "CSV"
-  import_compression_type   = "NONE"
+  import_compression_type   = "GZIP"
   import_bucket_name        = var.Z_ETL_DYNAMODB_DATA_BUCKET
   csv_delimiter             = ","
   

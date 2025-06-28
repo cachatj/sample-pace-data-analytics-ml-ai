@@ -78,14 +78,20 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/idc/idc-org/backend.tf
 ./iac/roots/idc/idc-acc/terraform.tfvars
 ./iac/roots/idc/idc-acc/backend.tf
+./iac/roots/idc/disable-mfa/terraform.tfvars
 ./iac/roots/network/terraform.tfvars
 ./iac/roots/network/backend.tf
 ./iac/roots/foundation/buckets/terraform.tfvars
 ./iac/roots/foundation/buckets/backend.tf
 ./iac/roots/foundation/iam-roles/terraform.tfvars
 ./iac/roots/foundation/iam-roles/backend.tf
+./iac/roots/foundation/msk-serverless/terraform.tfvars
+./iac/roots/foundation/msk-serverless/backend.tf
+./iac/roots/foundation/vpc/terraform.tfvars
 ./iac/roots/foundation/kms-keys/terraform.tfvars
 ./iac/roots/foundation/kms-keys/backend.tf
+./iac/roots/common/msk-provisioned/terraform.tfvars
+./iac/roots/common/msk-provisioned/backend.tf
 ./iac/roots/datazone/dz-project-prereq/terraform.tfvars
 ./iac/roots/datazone/dz-project-prereq/backend.tf
 ./iac/roots/datazone/dz-custom-project/terraform.tfvars
@@ -96,6 +102,12 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/datazone/dz-consumer-project/backend.tf
 ./iac/roots/datazone/dz-producer-project/terraform.tfvars
 ./iac/roots/datazone/dz-producer-project/backend.tf
+./iac/roots/datalakes/trade/terraform.tfvars
+./iac/roots/datalakes/trade/backend.tf
+./iac/roots/datalakes/stocks/terraform.tfvars
+./iac/roots/datalakes/stocks/backend.tf
+./iac/roots/datalakes/price/terraform.tfvars
+./iac/roots/datalakes/price/backend.tf
 ./iac/roots/datalakes/splunk/terraform.tfvars
 ./iac/roots/datalakes/splunk/backend.tf
 ./iac/roots/datalakes/inventory/terraform.tfvars
@@ -132,7 +144,6 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/bootstrap/parameters-secondary.json
 ./iac/bootstrap/parameters-crr.json
 ./review/checkov.txt
-./.git/index
 ./Makefile-4-customer"
 templateFilePaths=($(echo "$templateFilePathsStr"))
 
