@@ -136,7 +136,8 @@ build-lambda-layer:
 	@echo "Building Lambda Layer"
 	cd iac/roots/foundation/msk-serverless/data-generator; \
 	rm -f dependencies_layer.zip; \
-	pip install -r requirements.txt - python/ --upgrade; \
+	mkdir -p python; \
+	pip install -r requirements.txt --platform manylinux2014_x86_64 --python-version 3.9 --only-binary=:all: --target ./python; \
 	zip -r dependencies_layer.zip python/; \
 	rm -rf python/
 	@echo "Finished Building Lambda Layer"
