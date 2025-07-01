@@ -94,8 +94,8 @@ resource "aws_iam_policy" "lambda_msk_policy" {
 resource "aws_lambda_layer_version" "dependencies_layer" {
   layer_name          = "${var.APP}-${var.ENV}-msk-producer-dependencies"
   description         = "Dependencies for MSK producer lambda"
-  filename            = "${path.module}/data-generator/lambda-packages/dependencies_layer.zip"
-  source_code_hash    = filebase64sha256("${path.module}/data-generator/lambda-packages/dependencies_layer.zip")
+  filename            = "${path.module}/data-generator/dependencies_layer.zip"
+  source_code_hash    = filebase64sha256("${path.module}/data-generator/dependencies_layer.zip")
   compatible_runtimes = ["python3.12"]
 }
 

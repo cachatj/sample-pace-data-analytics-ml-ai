@@ -132,6 +132,16 @@ destroy-vpc:
 
 #################### MSK ############################
 
+build-lambda-layer:
+	@echo "Building Lambda Layer"
+	cd iac/roots/foundation/msk-serverless/data-generator; \
+	rm -f dependencies_layer.zip; \
+	mkdir -p python; \
+	pip install -r requirements.txt --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: --target ./python; \
+	zip -r dependencies_layer.zip python/; \
+	rm -rf python/
+	@echo "Finished Building Lambda Layer"
+
 deploy-msk:
 	@echo "Deploying MSK cluster"
 	(cd iac/roots/foundation/msk-serverless; \
@@ -1465,42 +1475,42 @@ destroy-data-pipeline:
 
 
 # Deploy all targets in the correct order, one make target at a time
-deploy-all: deploy-foundation deploy-idc deploy-domain deploy-projects deploy-glue-jars deploy-lake-formation deploy-athena deploy-billing-static deploy-billing-dynamic deploy-billing-cur deploy-inventory-static deploy-billing-dynamic deploy-zetl-ddb deploy-splunk-modules deploy-project-configuration deploy-datazone deploy-quicksight-subscription deploy-quicksight deploy-billing-cur-modules
-deploy-foundation: deploy-kms-keys deploy-iam-roles deploy-buckets
-deploy-idc: deploy-idc-org
-deploy-domain: deploy-domain-prereq deploy-domain
-deploy-projects: deploy-project-prereq deploy-producer-project deploy-consumer-project extract-producer-info extract-consumer-info
-deploy-glue-jars: deploy-glue-jars
-deploy-lake-formation: create-glue-s3tables-catalog register-s3table-catalog-with-lake-formation grant-default-database-permissions drop-default-database
-deploy-athena: deploy-athena 
-deploy-billing-static: deploy-billing grant-default-database-permissions drop-default-database start-billing-hive-job start-billing-iceberg-static-job start-billing-s3table-create-job start-billing-s3table-job grant-lake-formation-billing-s3-table-catalog start-billing-hive-data-quality-ruleset start-billing-iceberg-data-quality-ruleset
-deploy-billing-dynamic: upload-billing-dynamic-report-1 upload-billing-dynamic-report-2 grant-lake-formation-billing-iceberg-dynamic
-deploy-billing-cur: activate-cost-allocation-tags deploy-billing-cur 
-deploy-inventory-static: deploy-inventory grant-default-database-permissions drop-default-database start-inventory-hive-job start-inventory-iceberg-static-job start-inventory-s3table-create-job start-inventory-s3table-job grant-lake-formation-inventory-s3-table-catalog start-inventory-hive-data-quality-ruleset start-inventory-iceberg-data-quality-ruleset 
-deploy-inventory-dynamic: upload-inventory-dynamic-report-1 upload-inventory-dynamic-report-2 grant-lake-formation-inventory-iceberg-dynamic
-deploy-zetl-ddb: deploy-z-etl-dynamodb-data-prereq upload-z-etl-dynamodb-data deploy-z-etl-dynamodb
-deploy-splunk-modules: deploy-network deploy-splunk grant-default-database-permissions drop-default-database start-splunk-iceberg-static-job start-splunk-s3table-create-job start-splunk-s3table-job grant-lake-formation-splunk-s3-table-catalog
-deploy-project-configuration: deploy-project-config billing-grant-producer-s3tables-catalog-permissions inventory-grant-producer-s3tables-catalog-permissions splunk-grant-producer-s3tables-catalog-permissions 
-deploy-datazone: deploy-datazone-domain deploy-datazone-project-prereq deploy-datazone-producer-project deploy-datazone-consumer-project deploy-datazone-custom-project
-deploy-smus-snowflake-connection: deploy-snowflake-connection grant-lake-formation-snowflake-catalog update-kms-policy-for-lakehouse
-deploy-snowflake-zero-etl: deploy-z-etl-snowflake start-snowflake-job 
-deploy-quicksight-subscription: deploy-quicksight-subscription
-deploy-quicksight: deploy-quicksight-dataset
+deploy-all: deploy-foundation-all deploy-idc-all deploy-domain-all deploy-projects-all deploy-glue-jars-all deploy-lake-formation-all deploy-athena-all deploy-billing-static-all deploy-billing-dynamic-all deploy-billing-cur-all deploy-inventory-static-all deploy-inventory-dynamic-all deploy-zetl-ddb-all deploy-splunk-all deploy-project-configuration-all deploy-datazone-all deploy-snowflake-connection-all deploy-snowflake-z-etl-all deploy-quicksight-subscription-all deploy-quicksight-all 
+deploy-foundation-all: deploy-kms-keys deploy-iam-roles deploy-buckets
+deploy-idc-all: deploy-idc-org
+deploy-domain-all: deploy-domain-prereq deploy-domain
+deploy-projects-all: deploy-project-prereq deploy-producer-project deploy-consumer-project extract-producer-info extract-consumer-info
+deploy-glue-jars-all: deploy-glue-jars
+deploy-lake-formation-all: create-glue-s3tables-catalog register-s3table-catalog-with-lake-formation grant-default-database-permissions drop-default-database
+deploy-athena-all: deploy-athena 
+deploy-billing-static-all: deploy-billing grant-default-database-permissions drop-default-database start-billing-hive-job start-billing-iceberg-static-job start-billing-s3table-create-job start-billing-s3table-job grant-lake-formation-billing-s3-table-catalog start-billing-hive-data-quality-ruleset start-billing-iceberg-data-quality-ruleset
+deploy-billing-dynamic-all: upload-billing-dynamic-report-1 upload-billing-dynamic-report-2 grant-lake-formation-billing-iceberg-dynamic
+deploy-billing-cur-all: activate-cost-allocation-tags deploy-billing-cur 
+deploy-inventory-static-all: deploy-inventory grant-default-database-permissions drop-default-database start-inventory-hive-job start-inventory-iceberg-static-job start-inventory-s3table-create-job start-inventory-s3table-job grant-lake-formation-inventory-s3-table-catalog start-inventory-hive-data-quality-ruleset start-inventory-iceberg-data-quality-ruleset 
+deploy-inventory-dynamic-all: upload-inventory-dynamic-report-1 upload-inventory-dynamic-report-2 grant-lake-formation-inventory-iceberg-dynamic
+deploy-zetl-ddb-all: deploy-z-etl-dynamodb-data-prereq upload-z-etl-dynamodb-data deploy-z-etl-dynamodb
+deploy-splunk-all: deploy-network deploy-splunk grant-default-database-permissions drop-default-database start-splunk-iceberg-static-job start-splunk-s3table-create-job start-splunk-s3table-job grant-lake-formation-splunk-s3-table-catalog
+deploy-project-configuration-all: deploy-project-config billing-grant-producer-s3tables-catalog-permissions inventory-grant-producer-s3tables-catalog-permissions splunk-grant-producer-s3tables-catalog-permissions 
+deploy-datazone-all: deploy-datazone-domain deploy-datazone-project-prereq deploy-datazone-producer-project deploy-datazone-consumer-project deploy-datazone-custom-project
+deploy-snowflake-connection-all: deploy-snowflake-connection grant-lake-formation-snowflake-catalog update-kms-policy-for-lakehouse
+deploy-snowflake-z-etl-all: deploy-z-etl-snowflake start-snowflake-job 
+deploy-quicksight-subscription-all: deploy-quicksight-subscription
+deploy-quicksight-all: deploy-quicksight-dataset
 
 #################### Destroy All ####################
 
 # Destroy all targets in the correct order, one make target at a time
-destroy-all: destroy-datazone destroy-project-configuration destroy-splunk-modules destroy-zetl-ddb destroy-inventory-modules destroy-billing-cur-modules destroy-billing-modules destroy-athena destroy-projects destroy-domain destroy-idc destroy-foundation
-destroy-foundation: destroy-buckets destroy-iam-roles destroy-kms-keys
-destroy-idc: destroy-idc-org
-destroy-domain: destroy-domain destroy-domain-prereq
-destroy-projects: destroy-consumer-project destroy-producer-project  destroy-project-prereq
-destroy-athena: destroy-athena
-destroy-billing-modules: destroy-billing
-destroy-billing-cur-modules: destroy-billing-cur
-destroy-inventory-modules: destroy-inventory
-destroy-zetl-ddb: destroy-z-etl-dynamodb destroy-z-etl-dynamodb-data-prereq
-destroy-splunk-modules: destroy-splunk
-destroy-project-configuration: destroy-project-config
-destroy-datazone: destroy-datazone-custom-project destroy-datazone-consumer-project  destroy-datazone-producer-project destroy-datazone-project-prereq destroy-datazone-domain
-destroy-smus-snowflake-connection: destroy-snowflake-connection
+destroy-all: destroy-snowflake-connection-all destroy-datazone-all destroy-project-configuration-all destroy-splunk-all destroy-zetl-ddb-all destroy-inventory-all destroy-billing-cur-all destroy-billing-all destroy-athena-all destroy-projects-all destroy-domain-all destroy-idc-all destroy-foundation-all
+destroy-foundation-all: destroy-buckets destroy-iam-roles destroy-kms-keys
+destroy-idc-all: destroy-idc-acc
+destroy-domain-all: destroy-domain destroy-domain-prereq
+destroy-projects-all: destroy-consumer-project destroy-producer-project  destroy-project-prereq
+destroy-athena-all: destroy-athena
+destroy-billing-all: destroy-billing
+destroy-billing-cur-all: destroy-billing-cur
+destroy-inventory-all: destroy-inventory
+destroy-zetl-ddb-all: destroy-z-etl-dynamodb destroy-z-etl-dynamodb-data-prereq
+destroy-splunk-all: destroy-splunk
+destroy-project-configuration-all: destroy-project-config
+destroy-datazone-all: destroy-datazone-custom-project destroy-datazone-consumer-project  destroy-datazone-producer-project destroy-datazone-project-prereq destroy-datazone-domain
+destroy-smus-snowflake-connection-all: destroy-snowflake-connection
