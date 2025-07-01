@@ -137,7 +137,7 @@ build-lambda-layer:
 	cd iac/roots/foundation/msk-serverless/data-generator; \
 	rm -f dependencies_layer.zip; \
 	mkdir -p python; \
-	pip install -r requirements.txt --platform manylinux2014_x86_64 --python-version 3.9 --only-binary=:all: --target ./python; \
+	pip install -r requirements.txt --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: --target ./python; \
 	zip -r dependencies_layer.zip python/; \
 	rm -rf python/
 	@echo "Finished Building Lambda Layer"
@@ -1500,7 +1500,7 @@ deploy-quicksight-all: deploy-quicksight-dataset
 #################### Destroy All ####################
 
 # Destroy all targets in the correct order, one make target at a time
-destroy-all: destroy-smus-snowflake-connection-all destroy-datazone-all destroy-project-configuration-all destroy-splunk-all destroy-zetl-ddb-all destroy-inventory-all destroy-billing-cur-all destroy-billing-all destroy-athena-all destroy-projects-all destroy-domain-all destroy-idc-all destroy-foundation-all
+destroy-all: destroy-snowflake-connection-all destroy-datazone-all destroy-project-configuration-all destroy-splunk-all destroy-zetl-ddb-all destroy-inventory-all destroy-billing-cur-all destroy-billing-all destroy-athena-all destroy-projects-all destroy-domain-all destroy-idc-all destroy-foundation-all
 destroy-foundation-all: destroy-buckets destroy-iam-roles destroy-kms-keys
 destroy-idc-all: destroy-idc-acc
 destroy-domain-all: destroy-domain destroy-domain-prereq
