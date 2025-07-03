@@ -76,3 +76,4 @@ __pycache__
 
 # SageMaker domain output files
 iac/roots/sagemaker/domain/*.out
+.crossnote
