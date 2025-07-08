@@ -78,3 +78,4 @@ __pycache__
 iac/roots/sagemaker/domain/*.out
 .crossnote
 backups
+data
