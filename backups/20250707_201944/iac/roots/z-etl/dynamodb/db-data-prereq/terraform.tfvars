@@ -1,6 +1,0 @@
-APP                                 = "vhtds"
-ENV                                 = "dev"
-AWS_PRIMARY_REGION                  = "us-east-1"
-AWS_SECONDARY_REGION                = "us-east-2"
-S3_PRIMARY_KMS_KEY_ALIAS            = "vhtds-dev-s3-secret-key"
-S3_SECONDARY_KMS_KEY_ALIAS          = "vhtds-dev-s3-secret-key"
