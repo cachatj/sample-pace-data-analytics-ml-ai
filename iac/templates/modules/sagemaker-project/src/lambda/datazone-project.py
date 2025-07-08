@@ -43,7 +43,7 @@ def handler(event, context):
                 print("Project Id is empty or None")
             else:    
                 project_id = update_project(datazone_client, identifier, domain_id, project_name, project_description)
-                add_project_owner(datazone_client, domain_id, project_id, project_owner)
+                add_project_owner(datazone_client, domain_id, project_id, project_owner, owner_type)
             response_data = {"ProjectId": identifier}
             sendResponseCfn(event, context, 'SUCCESS', identifier, response_data)
 

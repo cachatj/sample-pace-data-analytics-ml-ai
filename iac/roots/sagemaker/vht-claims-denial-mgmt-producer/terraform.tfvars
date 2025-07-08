@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT-0
 
 # Standard DAIVI variables - update with your environment values
-APP                  = "###APP_NAME###"
-ENV                  = "###ENV_NAME###"
-AWS_PRIMARY_REGION   = "###AWS_PRIMARY_REGION###"
-AWS_SECONDARY_REGION = "###AWS_SECONDARY_REGION###"
+APP                  = "vhtds"
+ENV                  = "dev"
+AWS_PRIMARY_REGION   = "us-east-1"
+AWS_SECONDARY_REGION = "us-east-2"
 
 # Project-specific values
 PROJECT_NAME        = "vht-claims-denial-mgmt-producer"

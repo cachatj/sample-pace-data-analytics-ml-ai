@@ -3,10 +3,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "###APP_NAME###-###ENV_NAME###-tfstate"
+    bucket         = "vhtds-dev-tfstate"
     key            = "sagemaker/vht-claims-denial-mgmt-producer/terraform.tfstate"
-    region         = "###AWS_PRIMARY_REGION###"
-    dynamodb_table = "###APP_NAME###-###ENV_NAME###-tflock"
+    region         = "us-east-1"
+    dynamodb_table = "vhtds-dev-tflock"
     encrypt        = true
   }
 }
