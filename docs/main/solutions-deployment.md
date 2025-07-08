@@ -388,7 +388,7 @@ make deploy-domain
 | Target               | Result                          | Verification                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | deploy-domain-prereq | Deploy Pre-requisite for Domain | Following VPC is created for Sagemaker <br> 1. sagemaker-unified-studio-vpc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| deploy-domain        | Deploy Domain                   | Following Sagemaker resources are created <br> 1. Sagemaker domain called _Corporate_ <br> 2. Sagemaker blueprints are enabled under _Corporate_ domain <br> 3. Three Sagemaker project profiles are configured under _Corporate_ domain <br> 4. Login to Sagemaker Unified Studio for _Corporate_ domain using various user credentials created in _IAM Identity Center_ section and confirm that you are able to open the domain. When you login to Sagemaker Unified Studio, it will be ask you to enter usename and one-time password you had created in the _IAM Identity Center_ and it will ask you change the password. Please use a password with letter, numbers and special charaters and store the password in a file using your favorite editor. |
+| deploy-domain        | Deploy Domain                   | Following Sagemaker resources are created <br> 1. Sagemaker domain called _VHT-DataSci-Domain_ <br> 2. Sagemaker blueprints are enabled under _VHT-DataSci-Domain_ domain <br> 3. Three Sagemaker project profiles are configured under _VHT-DataSci-Domain_ domain <br> 4. Login to Sagemaker Unified Studio for _VHT-DataSci-Domain_ domain using various user credentials created in _IAM Identity Center_ section and confirm that you are able to open the domain. When you login to Sagemaker Unified Studio, it will be ask you to enter usename and one-time password you had created in the _IAM Identity Center_ and it will ask you change the password. Please use a password with letter, numbers and special charaters and store the password in a file using your favorite editor. |
 
 ---
 
@@ -995,13 +995,13 @@ This module helps users create custom assets and publish custom lineage to Sagem
 
 Grant project owner permission to create custom asset type:
 
-1. Navigate to the Amazon SageMaker in the AWS Console and select "Corporate" domain
+1. Navigate to the Amazon SageMaker in the AWS Console and select "VHT-DataSci-Domain" domain
 2. Login to the Sagemaker Unified Studio using the domain owner role with "downer" in the name (`ann-chouvey-downer@example.com` in this tutorial)
 3. Click on "Govern->Domain units" to open "Domain Units" page
-4. Click "Corporate" to open the root domain unit
+4. Click "VHT-DataSci-Domain" to open the root domain unit
 5. Scroll down to click on "Custom asset type creation policy"
 6. Click on "ADD POLICY GRANT" button
-7. Select "Corporate" as the project
+7. Select "VHT-DataSci-Domain" as the project
 8. Select "Producer" project from the projects dropdown
 9. Select both "Owner" and "Contributor"
 10. Click on "ADD POLICY GRANT" button

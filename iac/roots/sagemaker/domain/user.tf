@@ -24,7 +24,7 @@ locals {
 data "aws_identitystore_user" "users" {
   for_each = toset(nonsensitive(local.user_emails))
 
-  identity_store_id = data.aws_ssoadmin_instances.identity_center.identity_store_ids[0]
+  identity_store_id = "d-906633e25a"
   alternate_identifier {
     unique_attribute {
       attribute_path  = "UserName"
@@ -37,7 +37,7 @@ data "aws_identitystore_user" "users" {
 data "aws_identitystore_user" "domain_owners" {
   for_each = toset(nonsensitive(local.domain_owner_emails))
 
-  identity_store_id = data.aws_ssoadmin_instances.identity_center.identity_store_ids[0]
+  identity_store_id = "d-906633e25a"
   alternate_identifier {
     unique_attribute {
       attribute_path  = "UserName"

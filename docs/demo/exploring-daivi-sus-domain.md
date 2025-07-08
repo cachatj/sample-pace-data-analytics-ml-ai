@@ -1,7 +1,7 @@
 # Domain Management in SageMaker Unified Studio
 
 ## Overview
-After deploying our solution, you'll find two distinct domains: the SageMaker Unified Studio domain (`Corporate`) and the DataZone domain (`Exchange`). This guide walks through both domain implementations and their configurations.
+After deploying our solution, you'll find two distinct domains: the SageMaker Unified Studio domain (`VHT-DataSci-Domain`) and the DataZone domain (`Exchange`). This guide walks through both domain implementations and their configurations.
 
 ## Prerequisites
 - Successfully deployed the solution using the provided Makefile
@@ -16,8 +16,8 @@ After deploying our solution, you'll find two distinct domains: the SageMaker Un
 
 ![SUS demo](../images/demo/sus/sus-0.png)
 
-- You should be able to see `Corporate` and `Exchange` domain present
-  - `Corporate` is the domain of SageMaker Unified Studio
+- You should be able to see `VHT-DataSci-Domain` and `Exchange` domain present
+  - `VHT-DataSci-Domain` is the domain of SageMaker Unified Studio
   - `Exchange` is the domain of Datazone
 
 ![SUS demo](../images/demo/sus/sus-1.png)
@@ -34,7 +34,7 @@ After deploying our solution, you'll find two distinct domains: the SageMaker Un
 
 ![SUS demo](../images/demo/sus/sus-2.png)
   
-## SageMaker Unified Studio Domain (`Corporate`)
+## SageMaker Unified Studio Domain (`VHT-DataSci-Domain`)
 
 ### 1. User Management
 

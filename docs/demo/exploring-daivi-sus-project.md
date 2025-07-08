@@ -7,7 +7,7 @@ After exploring the domain structure of SageMaker Unified Studio, we'll now dive
 - Successfully deployed SageMaker Unified Studio domains
 - Completed all domain management setup steps from the previous guide
 - Logged into SageMaker Unified Studio as a **project user**
-- Access `Corporate` domain in SageMaker Unified Studio
+- Access `VHT-DataSci-Domain` domain in SageMaker Unified Studio
 
 Note: For detailed SSO login instructions using IAM Identity Center, refer to [Section 3 - Sign into SageMaker Unified Studio Domain](exploring-daivi-sus-domain.md) in the previous guide
 
@@ -41,7 +41,7 @@ Note: For detailed SSO login instructions using IAM Identity Center, refer to [S
   - Project role ARN: IAM role used for project operations
   - Created by: User or service that created the project
   - Project profile name: Applied capabilities profile (e.g., "All capabilities")
-  - Domain unit name: Organizational unit (e.g., "Corporate")
+  - Domain unit name: Organizational unit (e.g., "VHT-DataSci-Domain")
 
 ![SUS demo](../images/demo/sus-projects/pj-1.png)
 

@@ -7,7 +7,7 @@ Data lineage is a critical aspect of SageMaker Unified Studio that provides visi
 - Successfully deployed SageMaker Unified Studio domains
 - Basic understanding of project management in SUS (see [Project Management guide](exploring-daivi-sus-projects.md))
 - Logged into SageMaker Unified Studio as a **project user**
-- Access `Corporate` domain > `Consumer` project
+- Access `VHT-DataSci-Domain` domain > `Consumer` project
 
 ## Accessing Data Lineage
 

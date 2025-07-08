@@ -1,0 +1,241 @@
+[
+  {
+    "name": "vht-payer-propensity-producer",
+    "type": "producer",
+    "description": "ML pipeline for payer propensity modeling with feature engineering and inference endpoints",
+    "create_datalake": true,
+    "source_bucket": "vht-ds-raw-data",
+    "glossary_terms": ["healthcare", "payer", "propensity", "machine-learning", "claims", "revenue-cycle"],
+    "environment_configs": [
+      {
+        "name": "ML Pipeline Environment",
+        "description": "SageMaker training, feature store, and inference endpoints",
+        "blueprint": "sagemaker-ml-pipeline",
+        "deployment_order": 1,
+        "parameters": {
+          "s3_raw_data_bucket": "vht-ds-raw-data",
+          "s3_staged_data_bucket": "vht-ds-staged-data",
+          "s3_analytic_data_bucket": "vht-ds-analytic-data",
+          "feature_store_name": "payer-propensity-features",
+          "model_registry_name": "payer-propensity-models",
+          "training_instance_type": "ml.m5.2xlarge",
+          "inference_instance_type": "ml.m5.xlarge",
+          "max_runtime_seconds": 86400
+        }
+      },
+      {
+        "name": "Lakehouse Database",
+        "description": "Iceberg tables for payer propensity data",
+        "blueprint": "lakehouse-database",
+        "deployment_order": 2,
+        "parameters": {
+          "database_name": "vht_payer_propensity",
+          "table_format": "iceberg",
+          "schema_evolution": "dynamic"
+        }
+      }
+    ],
+    "table_schemas": {
+      "patient_demographics": {
+        "description": "Patient demographic information for propensity modeling",
+        "columns": [
+          {"name": "patient_id", "type": "string"},
+          {"name": "age_group", "type": "string"},
+          {"name": "gender", "type": "string"},
+          {"name": "location", "type": "string"},
+          {"name": "insurance_type", "type": "string"}
+        ]
+      },
+      "payment_history": {
+        "description": "Historical payment patterns",
+        "columns": [
+          {"name": "payment_id", "type": "string"},
+          {"name": "patient_id", "type": "string"},
+          {"name": "payer_id", "type": "string"},
+          {"name": "payment_amount", "type": "double"},
+          {"name": "payment_date", "type": "timestamp"}
+        ]
+      },
+      "propensity_scores": {
+        "description": "Generated propensity scores",
+        "columns": [
+          {"name": "score_id", "type": "string"},
+          {"name": "patient_id", "type": "string"},
+          {"name": "payer_id", "type": "string"},
+          {"name": "propensity_score", "type": "double"},
+          {"name": "confidence_level", "type": "double"}
+        ]
+      }
+    }
+  },
+  {
+    "name": "vht-claims-denial-mgmt-producer",
+    "type": "producer",
+    "description": "Automated claims denial management using Bedrock Agents and predictive analytics",
+    "create_datalake": true,
+    "source_bucket": "vht-ds-raw-data",
+    "glossary_terms": ["healthcare", "claims", "denial", "bedrock", "automation", "agents"],
+    "environment_configs": [
+      {
+        "name": "Bedrock Agents Environment",
+        "description": "Amazon Bedrock agents for claims processing automation",
+        "blueprint": "bedrock-agents",
+        "deployment_order": 1,
+        "parameters": {
+          "knowledge_base_name": "claims-denial-kb",
+          "agent_name": "claims-denial-agent",
+          "foundation_model": "anthropic.claude-3-sonnet-20240229-v1:0",
+          "vector_store": "opensearch-serverless",
+          "embedding_model": "amazon.titan-embed-text-v1",
+          "max_tokens": 4000
+        }
+      },
+      {
+        "name": "Claims Analytics Database",
+        "description": "Iceberg tables for claims denial analytics",
+        "blueprint": "lakehouse-database",
+        "deployment_order": 2,
+        "parameters": {
+          "database_name": "vht_claims_denial",
+          "table_format": "iceberg",
+          "schema_evolution": "dynamic"
+        }
+      }
+    ],
+    "table_schemas": {
+      "claims_history": {
+        "description": "Historical claims data for denial analysis",
+        "columns": [
+          {"name": "claim_id", "type": "string"},
+          {"name": "patient_id", "type": "string"},
+          {"name": "payer_id", "type": "string"},
+          {"name": "claim_amount", "type": "double"},
+          {"name": "denial_status", "type": "string"}
+        ]
+      },
+      "denial_reasons": {
+        "description": "Categorized denial reasons and patterns",
+        "columns": [
+          {"name": "denial_id", "type": "string"},
+          {"name": "claim_id", "type": "string"},
+          {"name": "denial_code", "type": "string"},
+          {"name": "denial_category", "type": "string"},
+          {"name": "appeal_potential", "type": "string"}
+        ]
+      },
+      "automated_responses": {
+        "description": "AI-generated responses and recommendations",
+        "columns": [
+          {"name": "response_id", "type": "string"},
+          {"name": "claim_id", "type": "string"},
+          {"name": "recommended_action", "type": "string"},
+          {"name": "confidence_score", "type": "double"},
+          {"name": "generated_text", "type": "string"}
+        ]
+      }
+    }
+  },
+  {
+    "name": "vht-rag-chat-producer",
+    "type": "producer",
+    "description": "Multiple RAG applications and knowledge-based chat solutions",
+    "create_datalake": true,
+    "source_bucket": "vht-ds-analytic-data",
+    "glossary_terms": ["healthcare", "rag", "chat", "knowledge-base", "documentation", "bedrock"],
+    "environment_configs": [
+      {
+        "name": "RAG Applications Environment",
+        "description": "Multiple RAG chatbots with client-specific knowledge bases",
+        "blueprint": "bedrock-rag",
+        "deployment_order": 1,
+        "parameters": {
+          "knowledge_bases": [
+            {
+              "name": "client-sop-kb",
+              "description": "Client standard operating procedures and coding policies",
+              "data_source": "s3://vht-ds-analytic-data/client-documents/",
+              "chunk_size": 1000,
+              "chunk_overlap": 200
+            },
+            {
+              "name": "revamp-support-kb",
+              "description": "RevAmp tool user guides and training materials", 
+              "data_source": "s3://vht-ds-analytic-data/revamp-documentation/",
+              "chunk_size": 1000,
+              "chunk_overlap": 200
+            }
+          ],
+          "embedding_model": "amazon.titan-embed-text-v1",
+          "chat_model": "anthropic.claude-3-sonnet-20240229-v1:0"
+        }
+      }
+    ],
+    "table_schemas": {
+      "chat_interactions": {
+        "description": "Chat interaction logs and metrics",
+        "columns": [
+          {"name": "session_id", "type": "string"},
+          {"name": "user_query", "type": "string"},
+          {"name": "bot_response", "type": "string"},
+          {"name": "knowledge_base_used", "type": "string"},
+          {"name": "confidence_score", "type": "double"},
+          {"name": "interaction_timestamp", "type": "timestamp"}
+        ]
+      }
+    }
+  },
+  {
+    "name": "vht-analytics-consumer",
+    "type": "consumer",
+    "description": "Cross-project analytics and API endpoints for VHT-APP account access",
+    "create_datalake": true,
+    "source_bucket": "vht-ds-analytic-data",
+    "glossary_terms": ["healthcare", "analytics", "api", "cross-account", "consumer"],
+    "environment_configs": [
+      {
+        "name": "Cross-Account API Environment",
+        "description": "API Gateway and Lambda functions for VHT-APP account access",
+        "blueprint": "api-gateway-lambda",
+        "deployment_order": 1,
+        "parameters": {
+          "api_gateway_name": "vht-analytics-api",
+          "cross_account_role": "arn:aws:iam::254145955434:role/VHT-APP-DataAccess-Role",
+          "endpoints": [
+            "/propensity-score",
+            "/claims-denial-prediction",
+            "/chatbot-query"
+          ],
+          "throttle_rate_limit": 1000,
+          "throttle_burst_limit": 2000
+        }
+      },
+      {
+        "name": "Unified Analytics Database",
+        "description": "Consolidated analytics across all projects",
+        "blueprint": "lakehouse-database",
+        "deployment_order": 2,
+        "parameters": {
+          "database_name": "vht_unified_analytics",
+          "federated_queries": true,
+          "cross_project_access": true,
+          "source_databases": [
+            "vht_payer_propensity",
+            "vht_claims_denial"
+          ]
+        }
+      }
+    ],
+    "table_schemas": {
+      "unified_analytics": {
+        "description": "Cross-project analytics and metrics",
+        "columns": [
+          {"name": "analytics_id", "type": "string"},
+          {"name": "project_source", "type": "string"},
+          {"name": "metric_type", "type": "string"},
+          {"name": "metric_value", "type": "double"},
+          {"name": "calculation_timestamp", "type": "timestamp"}
+        ]
+      }
+    }
+  }
+]
